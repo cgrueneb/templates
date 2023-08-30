@@ -88,24 +88,24 @@
 
 \author{
 Author\\
-{\large\href{mailto:author@ovgu.de}{\nolinkurl{author@ovgu.de}}}
+{\large\href{mailto:christian.grueneberg@st.ovgu.de}{\nolinkurl{christian.grueneberg@st.ovgu.de}}}
 }
 
 \date{\today}
 
 \publishers{
 First Reviewer:\\
-Prof. Dr. Musterfrau
+Jun.-Prof. Dr. Michael Kuhn
 
 \medskip
 
 Second Reviewer:\\
-Prof. Dr. Mustermann
+Johannes Wünsche
 
 \medskip
 
 Supervisor:\\
-Dr. Evil
+Jun.-Prof. Dr. Michael Kuhn
 }
 
 \begin{document}
@@ -116,10 +116,14 @@ Dr. Evil
 \maketitle
 
 \begin{abstract}
-\lipsum[1]
 
-This thesis template is available at \url{https://github.com/parcio/templates} and consists of \cref{cha:introduction,cha:background,cha:evaluation,cha:conclusion}.
-It also contains \cref{cha:appendix}.
+% abstract als letztes schreiben, fast kurz die Arbeit zusammen um schnell einen Überblick zu geben
+% enthält den wesentlichen Inhalt und die kurz zusammengefasst das Ergebnis der Arbeit
+% stellt heraus was der eigene Anteil war/ist
+% ca 1 Seite
+
+-> write this last after everything else
+
 \end{abstract}
 
 \tableofcontents
@@ -131,133 +135,359 @@ It also contains \cref{cha:appendix}.
 \chapter{Introduction}
 \label{cha:introduction}
 
-\textit{In this chapter, ...}
+% Was ist das Problem und warum ist es wichtig.
+% stellt heraus warum der Leser sich dafür interessieren sollte
+% die Motivation hinter der Arbeit
+% beinhaltet auch was ist neu, was habe ich neues zum Thema beigetragen
+% was sind die Ergebnisse,
+% es wird auch kurz dargestellt wie vorgeganngen wurde
+% der Aufbau der Arbeit wird kurz vorgestellt
 
-\section{Motivation}
+% possible structure
+\section{Overview}
 
-\begin{figure}[ht]
+%- general problem for cache replacement\\
+%- primary and secondary storage \\
+%- memory hierachy\\
+%- change due to new trends like cloud storage and increasing cache size\\
+%- using of haura storage layer with different cache implementations clock, clock-pro and ml-clock\\
+%- tiered storage stack\\
+%- describe why using clock based algorithms -> citation in "It's Time to Revisit LRU vs. FIFO"\\
+
+% sollte ich ausfühlricher schreiben vielleicht noch als Diagramm mit rein bringen das cpu Geschwindigkeit sich schneller entwicklet als
+% die Geschwindigkeit für Speicherzugriffe 
+
+Caches are widely used in hardware and software systems today like L3 cache before DRAM, file systems, hard disk drives, databases,
+web servers and many more.
+Caching usually means that a small and fast memory is used before a larger but slower memory.
+However, it can also mean that a memory with different persistency is used, for example an SSD before a hard disk or 
+memory of the same type but in different locations, e.g. in Content Delivery Networks local nodes are used as a cache for distant back-end nodes.
+In all these cases, the goal is to reduce cost, decrease latency, and increase bandwidth.
+
+\begin{table}[ht]
 	\centering
-	\begin{subfigure}{0.45\textwidth}
-		\centering
-		\includegraphics[width=0.9\textwidth]{OVGU-INF}
-		\caption{Left}
-		\label{fig:left}
-	\end{subfigure}
-	\begin{subfigure}{0.45\textwidth}
-		\centering
-		\includegraphics[width=0.9\textwidth]{OVGU-INF}
-		\caption{Right}
-		\label{fig:right}
-	\end{subfigure}
-	\caption{Caption}
-	\label{fig:both}
-\end{figure}
+	\begin{tabular}{|l|l|l|l|l|}
+		\hline
+		\textbf{Cache Type} & \textbf{What Cached} & \textbf{Where Cached} & \textbf{Latency} & \textbf{Managed By}\\
+		 &  &  & \textbf{in cycles} &  \\
+		\hline
+		\hline
+		Registers & 4-byte word & CPU registers & 0 & Compiler \\
+		\hline
+		TLB & Address translation & On-Chip TLB & 0 & Hardware \\
+		\hline
+		L1 cache & 32-byte block & On-Chip L1 & 1 & Hardware \\
+		\hline
+		L2 cache & 32-byte block & On-Chip L2 & 10 & Hardware \\
+		\hline
+		Virtual Memory & 4-KB page & Main Memory & 100 & Hardware + OS \\
+		\hline
+		Buffer Cache & Parts of files & Main Memory & 100 & OS \\
+		\hline
+		Network buffer cache & Parts of files & Local disk & 10,000,000 & AFS/NFS client \\
+		\hline
+		Browser cache & Web pages & Local disk & 10,000,000 & Web browser \\
+		\hline
+		Web cache & Web pages & Remote server disks & 1,000,000,000 & Web proxy server \\
+		\hline
+	\end{tabular}
+	\caption{Caching Hierarchy}
+	\label{tab:caching hierarchy}
+\end{table}
 
-You can refer to the subfigures (\cref{fig:left,fig:right}) or the figure (\cref{fig:both}).
+The table \ref{tab:caching hierarchy} shows a few examples \cite{7569243}.
+Caching is used at different level of the memory hierachy with various cach block sizes, in software or with hardware support and for memory with different latencies.
+Therefore many different cache replacement algorthms were proposed for different use cases.
 
-\section*{Summary}
+% could describe why clock-based algorithm and not list based were considered.
 
-\lipsum[2]
+
+\section{Contribution}
+% check if contribution or contributions is right
+- new is direct comparison of clock based cache replacement algorithms\\
+
+\section{Outline}
+- description of the structure of the following work\\
+
+% 5-10%, ca. 2-5 Seiten 
 
 \chapter{Background}
 \label{cha:background}
 
-\textit{In this chapter, ...}
+% darstellen der nötigen Informationen und Arbeiten um die weitere Arbeit verstehen zu können
+% nicht zu weit ausschweifen
+% 10-20%, ca. 4-10 Seiten
 
-\section{Citations}
+- next chapter gives a short overview of topics necessary to understand the following work\\
 
-You can comfortably reference literature~\cite{DBLP:journals/superfri/DuweLMSF0B020}.\footnote{This is a footnote.}
-BibTeX entries for a large number of publications can be found at \url{https://dblp.org/}.
+\section{Caching problem}
 
-\section{Tables}
+- also locking is often not considered especially for older algorithms\\
+- could describe FIFO, LRU and LFU as the main policies for cache replacement\\
 
-\begin{table}[ht]
-	\centering
-	\begin{tabular}{|l|c|r|}
-		\hline
-		\textbf{Header 1} & \textbf{Header 2} & \textbf{Header 3} \\
-		\hline
-		\hline
-		Row 1 & Row 1 & Row 1 \\
-		Row 2 & Row 2 & Row 2 \\
-		\hline
-	\end{tabular}
-	\caption{Caption}
-	\label{tab:table}
-\end{table}
+\section{Haura}
+%- introduce haura storage stack and explain structure\\
+%- short explaination B-epsilon-tree\\
+%- task of the cache\\
 
-You can also refer to tables (\cref{tab:table}).
+Haura was created by \cite{wiedemann2018modern} to implement and test $B^{\epsilon}$-tree and further extanded to a hierarchical storage engine by \cite{hoppner2021design}.
+It is a key-value storage.
 
-\section{Math}
+\todo[inline]{insert figure overview haura}
 
-\[
-	E = m c^2
-\]
 
-\section*{Summary}
+\section{CLOCK}
+%- history of clock \\
+%- low overhead like FIFO but an LRU aproximation -> citation from "Multics paging experiment..."\\
+%- widely used \\
+%- already implemented \\
+%- used as baseline \\
 
-\lipsum[2]
+Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for Multics operating system.
+It is an approximation of the LRU (Least Recently Used) policy, but with a low runtime overhead, comparable to FIFO.
+
+Unlike previous cache replacement algorithms, clock uses a circular list with a "hand" as a pointer to the current entry.
+Each cache entry has a reference bit initialized to 0.
+On a cache hit the reference bit for an entry is set to 1.
+On a cache miss, we need an entry for eviction.
+First, we look at the entry to which the hand is pointing. If the reference bit for this entry is 0, we have found the entry to be displaced.
+If the reference bit is 1, we set the reference to 0 and move the pointer to the next entry.
+These steps are repeated until we find an entry with an unset reference bit.
+
+\todo[inline]{probably better to use a diagram to show how clock is working}
+
+Clock also remove the lock contention problem of LRU.
+For LRU each cache hit change the position of an entry in the LRU queue.
+So cache hit have to be serialize behind a lock to be used in a parallel system.
+Clock doesn't have this problem, because clock don't has to maintain an ordered queue.
+
+Due to its simplicity and good performance in most cases, the clock algorithm is widely used for example in Linux, Windows and NetBSD.
+
+ \todo[inline]{search for software which use clock as example with source}
+
+\section{CLOCK-PRO}
+%- improvement of clock algorithm \\
+%- should work better in cases clock has poor performance \\
+%- scanning or looping over data\\
+%- based on LIRS but adoptable not fixed Threshold\\
+%- uses reuse distance as metric \\
+%- categorizes entries in hot and cold\\
+%- also tracks non-resident entry to make better decisions about \\
+
+Although the clock algorithm performs well in a variety of use cases, problems arise with weakly localized access patterns, as described in \cite{jiang2005making}.
+Some problems include:
+\begin{itemize}
+	\item[1.] - access of many rarely used blocks can evict frequently used blocks for example in sequential scans
+	\item[2.] - a loop pattern which is slightly larger then the cache 
+	\item[3.] - in application with a B-tree index like databases, index blocks should be in cache but data blocks
+				evict index blocks because of the shorter access time
+\end{itemize}
+% has been many alternative cache replacement algorithms LIRS is only one 
+% could also mention more
+% three categories of improvements
+% 1. explicitly provide hints by user or programmer
+% 2. detecting the access patterns failing LRU and switch to an other effective replacement strategie
+% 3. using deeper history access information -> LIRS falls into this category
+
+These problems are general problems for LRU base replacement algorithms.
+An early attempt to overcome these problems was Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340} which uses the inter reference recency, the reuse distance, instead of last recency and divide the blocks in hot, with with low interreference recency and cold, with high interreference recency.
+Unlike LRU, LIRS attempts to keep the hot blocks in the cache and remove only the cold blocks, to overcome the weaknesses of LRU in cases of weak locallity.
+To determine which blocks are hot or cold, LIRS also tracks metadata information for a set of cache blocks that are not resident in the cache.
+LIRS uses a stack that includes hot, cold, and non-resident cold blocks, and an additional list for only resident cold entries.
+
+Clock-Pro algorithm \cite{jiang2005clock} combines the efficiency from clock with the performance improvements from LIRS.
+To achieve a better performance clock-pro combines LIRS stack and list in one circular list ordered by the last access.
+Hot blocks, with small recencies are at the head of the list and cold blocks with large recencies are at the tail of the list.
+After a cold block is insert into the clock, it is in a test period.
+If an access during this test period occure, the cold block become a hot block.
+On the other hand if the cold block is not re-access during its test period, it will be removed.
+It is possible that during the test period that the cold block will be removed from memory and became non-resident, then the meta data still remains in the clock until the cold block runs out of his test period.
+So a non-resident cold block can when a re-access occures, became a hot block.
+To generate free space only resident cold blocks are evicted.
+
+Clock-pro uses three handles instead of one like clock.
+These three handles are used to determine the test-period and find an eviction candidate.
+Since the test period, the threshold for an block to switch from cold to hot and also back from hot to cold is based on the distance between the handles the algorithm is adoptable and doesn't need a fixed threshold unlike other algorithms like CAR or 2Q.
+
+\todo[inline]{insert image for clock-pro layout}
+
+The hot-hand marks the tail of the list, which is the hot entrie with the largest recency.
+Any hot entry that would pass the hot hand is converted to a cold entry.
+The cold-hand points to the last resident cold page and is used to find a replacement candidate for eviction.
+The test-hand points to the last cold page in the test period. Any cold entry which passes this hand leaves the test period and any non-resident cold page in the test period that passes this pointer is removed from the clock.
+
+\todo[inline]{make a diagram to show finding of eviction candidate}
+\todo[inline]{decide if I want to use block, page or entry, shouldn't mix them up}
+
+To make clock-pro adaptable the ration for hot to cold entries is not fixed, unlike LIRS with has a fixed parameter for this.
+Also the ratio influence if clock-pro behaves more like LRU and less like LIRS.
+The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
+If there are no hot entries clock-pro behaves like clock algorithm. 
+However in case of where clock algorithm sturggles, loop and scans, clock-pro can achieve better results.
+
+If there are many entries with a small reuse distance (hot entries) and only a few cold entries. A new cold entry is evicted relatively quickly, but since it is still in the testing phase, it can be re-entered as a hot entry after an early re-access.
+Hot entries also need more time before they are evicted because they must transform into cold entries before they are evicted.
+For every cold page accessed during its test period we increment the capacity for cold pages by 1 and for every cold page which passes his test period without access we decrement the capacity by 1.
+This will also adjust the speed  for cold- and hot-hand.
+
+So clock-pro has the advantage of LRU in case of strong locality and better performance like LIRS in case of weak locality.
+
+\section{ML-CLOCK}
+%- newest algorithm of this three\\
+%- based on single layer perceptron and online learning \\
+%- also uses clock approach for efficient access compared to list based\\
+%- also tries to minimize write back of entries\\
+%- categorizes entries in clean (unchanged) and dirty (modified) entries\\
+%- also tries to optimize write back by sort dirty entries by address in storage not by time \\
+%- dirty entries can get second chance based on prediction by perceptron\\
+%- perceptron lerns if LRU or LFU is more important \\
+
+ML-clock \cite{cho2021ml} follows the recent trend to incorporate machine learning techniques.
+what let ML-clock stand out is that it uses single-layer perceptron (SLP) which is a relatively simple ml technique.
+But this allows the use of online learning instead of batch training which is used for neural networks and gives better adoptability.
+It uses SLP to learn if it should behave more like LRU or LFU and incorporate learned I/O patterns.
+Also ML-clock tries to minimize write operation and prioritize the eviction of clean entries instead of dirty entries.
+
+ML-clock tries to reduce the number of access to the underlying storage media and incorporate machine learning techniques.
+It starts with clock algorithm as basis. 
+Unlike clock, ML-clock uses two hands.
+Clean-hand to find eviction candidates which have not been modified and dirty-hand to find a modified eviction candidate.
+
+To train the SLP we need to track the reference bit, reference count, and a timestamp for last access for every entry.
+The reference bit is used just like in clock.
+Reference count is to track the frequency of access and the timestamp for the recency.
+SLP is used to decide which policies under the given circumstances is more suited.
+
+To predict if an entry will be evicted the following equation is used.
+The variables $w_d, w_c$ and $w_b$ represents the weight for reuse-distance, reference count and the bias.
+The variables $x_d$ and $x_c$ represents the input values for reuse-distance and the reference count.
+
+prediction: \\
+\begin{align}
+	f_{predict} (x_d, x_c) =
+	\begin{cases}
+		0, \quad x_d \cdot w_d + x_c \cdot w_c + 1 \cdot w_b < 0 \\
+		1, \quad x_d \cdot w_d + x_c \cdot w_c + 1 \cdot w_b \geq 0
+	\end{cases}
+\end{align}
+
+The variable $x_d$ must be reduced so that it has the same order of magnitude as $x_c$.
+A prediction is triggered to find a victim page for eviction or to decide if a learning operation is triggered.
+
+scaling of $x_d$:
+\begin{align}
+	x_d = \frac{current \  timestamp - timestamp \  of \  the \  last \  access}{size \  of \  circular \  list}
+\end{align}
+	
+The variable $lr$ is the learning rate and controls how much the model change each epoch.
+The equations below are used to train the new weights.
+The learing operation is used to update the weights.
+
+learning:
+\begin{align}
+\begin{split}
+	w_d \leftarrow w_d + lr \cdot x_d \cdot (v_{expect} - v_{predict})\\
+	w_c \leftarrow w_c + lr \cdot x_c \cdot (v_{expect} - v_{predict})\\
+	w_b \leftarrow w_b + lr \cdot x_b \cdot (v_{expect} - v_{predict})
+\end{split}
+\end{align}
+
+The variable $v_{predict}$ is the result of the prediction equations for a possible victim and 
+$v_{expect}$ is the correct answer for this prediction.
+The term $(v_{expect} - v_{predict})$ defines if the weightes are updated or not.
+
+In addition, ml-clock uses a ghost queue to store the metadata for eliminated entries in order to learn the weights.
+The ghost queue can hold at most the same number of entries as the circular list.
+Each time a new entry is added to the ghost queue and the ghost queue is full, a learning operation is triggered.
+Useful because every evicted entries can be used to calibrate the SLP.
+
+\todo[inline]{insert diagram or pseudocode to show finding of eviction candidate}
+\todo[inline]{show table with preference rules for c- and d-candidate}
+
+\chapter{Design and Implementation}
+\label{cha:design and implementation}
+% Design and Implementation fehlen?! als Kapitel
+% 25-35%, ca 10-14 Seiten
+
+-> can start with this chapter when I decide which benchmark and metrics I want to use\\
+- fio for synthetic benchmarks -> zipf dis. and sequential should be covered\\
+- try to find traces which I can use easily \\
+- some articles uses SPEC-Benchmark traces\\
+
+- general problem that we are dealing with variable sized cache entries and also \\
+  pinning an entry is possible which increases the difficulty of implementation of most suggested algorithms\\
+- most algorithms based an equally sized pages/entries without pinning\\
+- ml-clock with extra locking which could lead to problems, clock and clock-pro uses atomics to prevent this
+
+
+\chapter{Related Work}
+\label{cha:related work}
+% Related Work fehlt ebennfalls 
+%
+% es werden Arbeiten presentiert bzw. meine Arbeit mit diesen vergliechen
+% was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
+% 5-10%, ca 2-5 Seiten
+
+- FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion\\
+ interisting because for large storage FIFO could provide better results and could be 
+ easier to implement especially with the abstraction of the DMU 
+ 
+- maybe one or two of the cache algorithm Johannes suggested like FrozenHot, Arc, Cacheus \\
+- shepherd-Cache seems to follow the intention of "FIFO can be Better..." and could be a good candidate \\
+- CAR do something like ML-CLOCK, decide between recency and frequency but without perceptron \\
+- also a CLOCK-PRO+ exists to improve CLOCK-Pro performance \\
+- also a lot more ML algorithms exists\\
 
 \chapter{Evaluation}
 \label{cha:evaluation}
 
-\textit{In this chapter, ...}
+% detalierte Beschreibung des Testsystems und der Testumgebung, Software Hardware etc.
+% soll reproduzierbar sein
+% Wie soll man die Daten angeben reicht Diagramme?
+% was sind die Kriterien für die Evaluation, Latenz, Cache-misses, Ausführungszeit, ...
+% Interpretation der Resultate
+% Vorteile und Nachteile darstellen
 
-\section{Listings}
+% 25-35%, ca. 10-14 Seiten
 
-\begin{lstlisting}[caption=Caption,label=lst:hello-world]
-printf("Hello world!\n");
+-> start after benchmarks are done
 
-// Comment
-for (int i = 0; i < m; i++) {
-	for (int j = 0; j < n; j++) {
-		sum += 'a';
-	}
-}
-\end{lstlisting}
+% possible structure
+\section{Setup}
 
-You can also refer to listings (\cref{lst:hello-world}).
+\section{Methodology}
+- synthetic benchmarks with fio zipf and random, if I get random to work\\
+- zip benchmark with linux kernel source files\\
+- also try to find a trace with larger files then linux source files\\
 
-\section*{Summary}
+\section{Results}
 
-\lipsum[2]
 
 \chapter{Conclusion}
 \label{cha:conclusion}
+% could be conclusions and future work
 
-\textit{In this chapter, ...}
+-> after evaluation
 
-\section{Todos}
+% 5-10%, 2-5 Seiten
 
-\todo[inline]{FIXME}
-
-\lipsum[1-2]
-\todo{FIXME: remove this}
-
-\section*{Summary}
-
-\lipsum[2]
 
 \bibliographystyle{apalike}
 \bibliography{thesis}
 
 % \backmatter
+% should be around 20 references for bachelor thesis
+% avoid to cite web sites
+
 
 \appendix
 
 \chapter{Appendix}
 \label{cha:appendix}
 
-\begin{lstlisting}[caption=Caption]
-printf("Hello world!\n");
-
-// Comment
-for (int i = 0; i < m; i++) {
-	for (int j = 0; j < n; j++) {
-		sum += 'a';
-	}
-}
-\end{lstlisting}
+% could also be ad the beginning
+% implement acronyms or list of Abbreviations
+% implement list of figures, list of tables and listings
 
 \chapter*{}
 
