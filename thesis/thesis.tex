@@ -157,47 +157,18 @@ Jun.-Prof. Dr. Michael Kuhn
 % sollte ich ausfühlricher schreiben vielleicht noch als Diagramm mit rein bringen das cpu Geschwindigkeit sich schneller entwicklet als
 % die Geschwindigkeit für Speicherzugriffe 
 
-Caches are widely used in hardware and software systems today like L3 cache before DRAM, file systems, hard disk drives, databases,
-web servers and many more.
-Caching usually means that a small and fast memory is used before a larger but slower memory.
-However, it can also mean that a memory with different persistency is used, for example an SSD before a hard disk or 
-memory of the same type but in different locations, e.g. in Content Delivery Networks local nodes are used as a cache for distant back-end nodes.
-In all these cases, the goal is to reduce cost, decrease latency, and increase bandwidth.
+%Caches are widely used in hardware and software systems today like L3 cache before DRAM, file systems, hard disk drives, databases,
+%web servers and many more.
+%Caching usually means that a small and fast memory is used before a larger but slower memory.
+%However, it can also mean that a memory with different persistency is used, for example an SSD before a hard disk or 
+%memory of the same type but in different locations, e.g. in Content Delivery Networks local nodes are used as a cache for distant back-end nodes.
+%In all these cases, the goal is to reduce cost, decrease latency, and increase bandwidth.
 
-\begin{table}[ht]
-	\centering
-	\begin{tabular}{|l|l|l|l|l|}
-		\hline
-		\textbf{Cache Type} & \textbf{What Cached} & \textbf{Where Cached} & \textbf{Latency} & \textbf{Managed By}\\
-		 &  &  & \textbf{in cycles} &  \\
-		\hline
-		\hline
-		Registers & 4-byte word & CPU registers & 0 & Compiler \\
-		\hline
-		TLB & Address translation & On-Chip TLB & 0 & Hardware \\
-		\hline
-		L1 cache & 32-byte block & On-Chip L1 & 1 & Hardware \\
-		\hline
-		L2 cache & 32-byte block & On-Chip L2 & 10 & Hardware \\
-		\hline
-		Virtual Memory & 4-KB page & Main Memory & 100 & Hardware + OS \\
-		\hline
-		Buffer Cache & Parts of files & Main Memory & 100 & OS \\
-		\hline
-		Network buffer cache & Parts of files & Local disk & 10,000,000 & AFS/NFS client \\
-		\hline
-		Browser cache & Web pages & Local disk & 10,000,000 & Web browser \\
-		\hline
-		Web cache & Web pages & Remote server disks & 1,000,000,000 & Web proxy server \\
-		\hline
-	\end{tabular}
-	\caption{Caching Hierarchy}
-	\label{tab:caching hierarchy}
-\end{table}
+
 
 The table \ref{tab:caching hierarchy} shows a few examples \cite{7569243}.
-Caching is used at different level of the memory hierachy with various cach block sizes, in software or with hardware support and for memory with different latencies.
-Therefore many different cache replacement algorthms were proposed for different use cases.
+Caching is used at different level of the memory hierarchy with various cache block sizes, in software or with hardware support and for memory with different latencies.
+Therefore many different cache replacement algorithms were proposed for different use cases.
 
 % could describe why clock-based algorithm and not list based were considered.
 
@@ -219,11 +190,6 @@ Therefore many different cache replacement algorthms were proposed for different
 % 10-20%, ca. 4-10 Seiten
 
 - next chapter gives a short overview of topics necessary to understand the following work\\
-
-\section{Caching problem}
-
-- also locking is often not considered especially for older algorithms\\
-- could describe FIFO, LRU and LFU as the main policies for cache replacement\\
 
 \section{$B^{\epsilon}$-tree}
 
@@ -317,6 +283,148 @@ The user can decide how the used hardware falls into these tiers. Also, not all 
 The last layer, the \emph{Vdev Layer} is responsible for actually reading and writing data from the disks.
 Single disk, multiple disks or RAID-like configurations can be used.
 
+\section{Caching}
+\subsection{Overview}
+There is a large gap between cpu frequency, which is much faster, and  latency and bandwidth of memory.
+To reduce the gap and also reduce the cost of a system, memory is arranged in a hierarchy.
+Fast but expensive Memory at the top and descending slower but cheaper Memory.
+The goal is to find balance between performance, latency and bandwidth on one side and cost on the other side.
+
+\todo[inline]{insert image for memory hierarchy, use it to explain}
+
+% I need to formulate this better
+Caching refers to a fast and often smaller primary memory in front of a larger but slower secondary memory, in which the most recently or most frequently used data from the secondary memory is stored for faster access.
+It can also mean that data from a remote memory is stored in local memory for faster access, such as a web cache.
+The idea of caching is based on the assumption locality.
+Mainly temporal locality, when a datum is access it will likely be  accessed again and spatial locality, which means that when a datum is access it is likely that a datum nearby will be accessed in the near future.
+For spatial locality usually a block, also called cache line, of many data will be placed and evicted in the cache.
+The size of a cache line differs based on size of the cache.
+
+Due to the use of a memory hierarchy, caching is used in several places, as shown in table \ref{tab:caching hierarchy} and can either be handle in hardware like the L1 and L2 cache of a cpu-core, in software like a web cache or a combination of both.
+
+A cache hit occurs when the cache contains the requested data. If the cache is then also full and the requested entry cannot simply be added to the cache, a cache block must be found that is to be removed for the new entry.
+To find this victim entry there are several different policies.
+
+\subsection{Optimal Cache Replacement Policy}
+The optimal policy, also called Belady's policy, would be to always evict the entry that will not be needed for the longest time.
+But this is in general impossible to predict and only known after experimentation and can then be used to compare the optimal solution to other caching algorithm.
+Since the optimal solution cannot be obtained, different approximations are used.
+The three most used are First-in-First-out(FIFO), Least-Recently-Used(LRU) and Least-Frequently-Used(LFU).
+
+\subsection{FIFO}
+The simplest strategy is FIFO, which is not a true approximation of the Bélády's algorithm.
+With this strategy, the entry that has been in the cache the longest is always evicted first.
+This is very easy to implement and also has the advantage of not having to maintain additional data for each entry or a complex data structure. A simple linked list is sufficient.
+However, the serious disadvantage is that FIFO suffers from the Bélády's anomaly, which means that a larger cache size can lead to a higher cache miss rate. LRU and LFU do not suffer from this anomaly.
+Although FIFO is simple and easy to implement and is better suited for multi threading because no lock contention occurs when maintaining an ordered linked list during cache hits, it has worse hit rate compared to LRU and LFU.
+
+%Both, LRU and LFU are based on a ordered linked list, like FIFO.
+%LRU ordered based on the recency of the last access and LFU based on the access frequency.
+%So both have to save extra data for every entry and also have to maintain a ordered linked list which FIFO doesn't.
+%At the cost of more effort, a better hit rate is achieved.
+%Both LRU and LFU are to expensive and only approximations are used.
+% better describe both separately  
+
+\subsection{Least Recently Used}
+Another often used cache replacement policy is Least-Recently-Used(LRU).
+LRU is an approximation of the optimal Bélády's algorithm.
+But in contrast to Bélády's algorithm LRU is an online algorithm and has to select the eviction entry only based on past information.
+All cache entries are sorted based on there recency in a linked list.
+Each time an entry needs to be evicted, the entry that has not been used for the longest time is evicted.
+One problem is that an ordered list is used, i.e. after each cache hit the order in the list may have to be changed, which takes extra time and is done behind a lock for multi threading applications to prevent inconsistencies.
+Also to use the last actual access time is to expensive and only approximations are used.
+LRU works reasonably well in application with strong locality, CPU caches for example.
+On the other hand for applications in which several entries are accesses repeatedly, like looping over an array, LRU is not the best policy, due to neglect of frequency information.
+Furthermore applications with repetitive access patterns larger then the cache size are not handled well and lead to higher miss ratio.
+Usually LRU has better hit ratio then FIFO \cite{van1992lru}.
+Cache replacement algorithms based on LRU are widely used for example ... .
+% sources: "An experimental comparison of cache algorithms"
+% "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
+
+\subsection{Least Frequently Used}
+The last important cache replacement strategy is Least-Frequently-Used (LFU).
+The idea behind this is that a cache entry that has been used frequently in the past will also be used in the future.
+When a cache miss occurs, the least frequently accessed entry will be evicted.
+In case more then one entry have the same access count we have to use recency or decide randomly which entry has to be evicted.
+Also the entries are ordered in a single linked list and each entry has an counter which increased for each access.
+So we have the same problem as with LRU. We have to keep an ordered list.
+Like LRU often only an approximation is used because to track all information is to expensive.
+Instead of an Frequency counter for all possible entries only the entries actually in cache have a counter.
+Secondly often only a few bits are used as counter so the number of accesses is which can be tracked is limited. 
+The advantage of LFU is that entries with a low or 0 access count are removed relatively quickly, while entries with frequent access remain in the cache.
+This is the reason why LFU works better than LRU in scanning scenarios.
+One problem is that in cases an entry with high access count which is then not or seldom access, is hard to evict even so it is rarely used.
+To mitigate this case, aging is used, i.e. after a specified time the counter is reset or decreased.
+But this is extra work.
+% sources: "An experimental comparison of cache algorithms"
+% "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
+% wikipedia
+
+\subsection{Improved cache Replacement Policies}
+
+LRU is simple, uses very limited information and works good in cases of strong locality.
+Also LRU is the most used or the most policies are based on LRU.
+But the downside is scan and loop cases in which LFU performs better.
+Researcher tried to improve cache replacement with different ideas.
+
+First explicitly provided hints given by the user.
+This seem like a good idea but this is highly application specific and also depends on the hardware.
+So for every case someone has to program this into the code of an application.
+This is way to much work.
+% more informatin in LIRS paper
+
+Second strategy is to use deeper history information.
+One example is LRU-K whi
+
+% from LIRS paper \cite{10.1145/511399.511340}
+% three categories of improvements
+% 1. explicitly provide hints by user or programmer
+% 2. detecting the access patterns failing LRU and switch to an other effective replacement strategie
+% 3. using deeper history access information -> LIRS falls into this category
+% 4. could be the incoorporation of ML techniques to learn access patterns
+
+
+
+
+
+
+
+
+
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{|l|l|l|l|l|}
+		\hline
+		\textbf{Cache Type} & \textbf{What Cached} & \textbf{Where Cached} & \textbf{Latency} & \textbf{Managed By}\\
+		 &  &  & \textbf{in cycles} &  \\
+		\hline
+		\hline
+		Registers & 4-byte word & CPU registers & 0 & Compiler \\
+		\hline
+		TLB & Address translation & On-Chip TLB & 0 & Hardware \\
+		\hline
+		L1 cache & 32-byte block & On-Chip L1 & 1 & Hardware \\
+		\hline
+		L2 cache & 32-byte block & On-Chip L2 & 10 & Hardware \\
+		\hline
+		Virtual Memory & 4-KB page & Main Memory & 100 & Hardware + OS \\
+		\hline
+		Buffer Cache & Parts of files & Main Memory & 100 & OS \\
+		\hline
+		Network buffer cache & Parts of files & Local disk & 10,000,000 & AFS/NFS client \\
+		\hline
+		Browser cache & Web pages & Local disk & 10,000,000 & Web browser \\
+		\hline
+		Web cache & Web pages & Remote server disks & 1,000,000,000 & Web proxy server \\
+		\hline
+	\end{tabular}
+	\caption{Caching Hierarchy from \cite{7569243}}
+	\label{tab:caching hierarchy}
+\end{table}
+
+
+
 \section{CLOCK}
 %- history of clock \\
 %- low overhead like FIFO but an LRU aproximation -> citation from "Multics paging experiment..."\\
@@ -380,10 +488,10 @@ Clock-Pro algorithm \cite{jiang2005clock} combines the efficiency from clock wit
 To achieve a better performance clock-pro combines LIRS stack and list in one circular list ordered by the last access.
 Hot blocks, with small recencies are at the head of the list and cold blocks with large recencies are at the tail of the list.
 After a cold block is insert into the clock, it is in a test period.
-If an access during this test period occure, the cold block become a hot block.
+If an access during this test period occurs, the cold block become a hot block.
 On the other hand if the cold block is not re-access during its test period, it will be removed.
 It is possible that during the test period that the cold block will be removed from memory and became non-resident, then the meta data still remains in the clock until the cold block runs out of his test period.
-So a non-resident cold block can when a re-access occures, became a hot block.
+So a non-resident cold block can when a re-access occurs, became a hot block.
 To generate free space only resident cold blocks are evicted.
 
 Clock-pro uses three handles instead of one like clock.
@@ -392,7 +500,7 @@ Since the test period, the threshold for an block to switch from cold to hot and
 
 \todo[inline]{insert image for clock-pro layout}
 
-The hot-hand marks the tail of the list, which is the hot entrie with the largest recency.
+The hot-hand marks the tail of the list, which is the hot entry with the largest recency.
 Any hot entry that would pass the hot hand is converted to a cold entry.
 The cold-hand points to the last resident cold page and is used to find a replacement candidate for eviction.
 The test-hand points to the last cold page in the test period. Any cold entry which passes this hand leaves the test period and any non-resident cold page in the test period that passes this pointer is removed from the clock.
@@ -404,7 +512,7 @@ To make clock-pro adaptable the ration for hot to cold entries is not fixed, unl
 Also the ratio influence if clock-pro behaves more like LRU and less like LIRS.
 The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
 If there are no hot entries clock-pro behaves like clock algorithm. 
-However in case of where clock algorithm sturggles, loop and scans, clock-pro can achieve better results.
+However in case of where clock algorithm struggles, loop and scans, clock-pro can achieve better results.
 
 If there are many entries with a small reuse distance (hot entries) and only a few cold entries. A new cold entry is evicted relatively quickly, but since it is still in the testing phase, it can be re-entered as a hot entry after an early re-access.
 Hot entries also need more time before they are evicted because they must transform into cold entries before they are evicted.
@@ -425,7 +533,7 @@ So clock-pro has the advantage of LRU in case of strong locality and better perf
 
 ML-clock \cite{cho2021ml} follows the recent trend to incorporate machine learning techniques.
 what let ML-clock stand out is that it uses single-layer perceptron (SLP) which is a relatively simple ml technique.
-But this allows the use of online learning instead of batch training which is used for neural networks and gives better adoptability.
+But this allows the use of online learning instead of batch training which is used for neural networks and gives better adaptability.
 It uses SLP to learn if it should behave more like LRU or LFU and incorporate learned I/O patterns.
 Also ML-clock tries to minimize write operation and prioritize the eviction of clean entries instead of dirty entries.
 
@@ -510,7 +618,7 @@ Useful because every evicted entries can be used to calibrate the SLP.
 % 5-10%, ca 2-5 Seiten
 
 - FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion\\
- interisting because for large storage FIFO could provide better results and could be 
+ interesting because for large storage FIFO could provide better results and could be 
  easier to implement especially with the abstraction of the DMU 
  
 - maybe one or two of the cache algorithm Johannes suggested like FrozenHot, Arc, Cacheus \\
