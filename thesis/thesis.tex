@@ -354,6 +354,7 @@ Secondly often only a few bits are used as counter so the number of accesses is 
 The advantage of LFU is that entries with a low or 0 access count are removed relatively quickly, while entries with frequent access remain in the cache.
 This is the reason why LFU works better than LRU in scanning scenarios.
 One problem is that in cases an entry with high access count which is then not or seldom access, is hard to evict even so it is rarely used.
+Also LFU don't use or factor in recent access pattern like LRU.
 To mitigate this case, aging is used, i.e. after a specified time the counter is reset or decreased.
 But this is extra work.
 % sources: "An experimental comparison of cache algorithms"
@@ -371,25 +372,48 @@ First explicitly provided hints given by the user.
 This seem like a good idea but this is highly application specific and also depends on the hardware.
 So for every case someone has to program this into the code of an application.
 This is way to much work.
+Proposed by \cite{cao1994application} and \cite{patterson1995informed}
 % more informatin in LIRS paper
 
-Second strategy is to use deeper history information.
-One example is LRU-K whi
+First improvement strategy is through user or application given hints.
+This idea was proposed by \cite{cao1994application} and \cite{patterson1995informed}.
+It can achieve better performance then LRU but the user must know the underlying access pattern of his application to give good guidance.
+It is better to achieve improvement without explicit hints because i
+I/O pattern not always known upfront.
+Could also be hardware dependent and change from system to system.
 
-% from LIRS paper \cite{10.1145/511399.511340}
-% three categories of improvements
-% 1. explicitly provide hints by user or programmer
-% 2. detecting the access patterns failing LRU and switch to an other effective replacement strategie
-% 3. using deeper history access information -> LIRS falls into this category
-% 4. could be the incoorporation of ML techniques to learn access patterns
+Second approach is to use deeper history information because LRU only uses the last reference and not more.
+One example is LRU-K proposed by \cite{o1993lru},
+which uses the k-last references, mostly k=2 is the best choice.
+This is simple and easy to implement but it can quickly remove new and seldom used entries but recently and often used are harder to evict.
+For application with significant differences between access of entries this works well but on relatively equal distributed accesses it doesn't perform as well.
+Also we still have the cost for maintaining a priority queue.
+Another approach for  deeper history information is LRFU \cite{lee2001lrfu}. 
+It tracks frequency and recency for each entry and uses a weighting factor $\lambda$ do decide which is more important.
+But $\lambda$ is crucial for performance and highly dependent on system and application,
+so not really generally applicable.
+Another example is 2Q  algorithm by \cite{shasha19942q} which uses multiple queues.
+An A1in FIFO queue for new entries, Aout for entries recently evicted, so not resident in memory only meta information and Am as the main buffer for frequently accessed entries.
+The problem is again that the user have to set parameters for the A1in, A1out and Am and Thresholds when an entry will be promoted to Am and for switch from A1in to A1out.
 
+The third approach is to detect and adapt to access patterns.
+One example is Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340} which uses a queue for cold entries with high inter-reference recency and a queue for hot entries with low inter-reference recency.
+Only cold resident entries will be evicted the chance to evict a hot entries is low, need to change to cold entry first.
+LIRS is the basis for clock-pro.
+We again have the problem that we have to set parameters which are application dependent queue sizes but it is somewhat adaptable clock-pro even more.
 
+Another example is Adaptive Replacement Cache (ARC) \cite{270366}.
+ARC shares some similarities with 2Q, it also uses 2 queues $L_1$ for entries entries who are referenced only once in the recent past and $L_2$ for entries accessed at least twice in the recent past.
+So  $L_1$ measures recency and $L_2$ the frequency.
+To achieve adaptability the sizes of both queues is not fixed but depends on the workload and can change over time.
+ARC can outperform LRU and LFU on many real-world traces.
 
-
-
-
-
-
+A very recent trend is to incorporate ML-techniques to learn the underlying access pattern.
+One example is Fuzzy Page Replacement Algorithm by \cite{akbari2020page}
+which used Fuzzy c-means algorithm to find cluster in set of all cache entries an base the decision for eviction on the cluster.
+Another example is Learning-based Page Replacement (LPR) by \cite{kim2022lpr} which uses 
+uses LRU and MRU and learn the weighting factor between the two policies through online through reinforcement learning.
+ML-clock also falls into this category.
 
 
 \begin{table}[ht]
@@ -617,15 +641,51 @@ Useful because every evicted entries can be used to calibrate the SLP.
 % was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
 % 5-10%, ca 2-5 Seiten
 
-- FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion\\
- interesting because for large storage FIFO could provide better results and could be 
- easier to implement especially with the abstraction of the DMU 
+%- FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion\\
+% interesting because for large storage FIFO could provide better results and could be 
+% easier to implement especially with the abstraction of the DMU 
+% 
+%- maybe one or two of the cache algorithm Johannes suggested like FrozenHot, Arc, Cacheus \\
+%- shepherd-Cache seems to follow the intention of "FIFO can be Better..." and could be a good candidate \\
+%- CAR do something like ML-CLOCK, decide between recency and frequency but without perceptron \\
+%- also a CLOCK-PRO+ exists to improve CLOCK-Pro performance \\
+%- also a lot more ML algorithms exists\\
+
+\section*{It's Time to Revisit LRU vs FIFO by \cite{eytan2020s}}
+
+Earlier studies between LRU and FIFO performance are probably not sufficient for newer use cases such as web cache, ML ...
+Because the workloads and the sizes of caches changed dramatically over time.
+The general guide line LRU is better then FIFO isn't true in all cases.
+When the cache is to big to hold it completely in main memory FIFO is better because only the end where the eviction happens and the start of the FIFO queue need to be in main memory. So the simpler structure is more suitable in this case than LRU.
+LRU still better choice when the latency of memory is the dominating factor.
+
+\section*{FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion by \cite{yang2023fifo}}
+
+Although FIFO is a simple to implement cache replacement algorithm with O(1) complexity for insertion and removal and therefore provides good throughput.
+The major drawback was the lower hit rate compared to LRU-based algorithms.
+The paper by \cite{van1992lru} proofed that LRU is better under the assumption of an independent reference model.
+But this paper \cite{yang2023fifo} shows that FIFO can achieve comparable performance to modern LRU based cache replacement algorithms.
+This study uses very large data sets/traces from different use cases.
+The key to achieve this is the use of Quick Demotion and Lazy Promotion.
+Quick Demotion is based from the observation that often recently insert entries also leave the cache quickly. So these new entries are insert in a smaller FIFO queue, 10\% of cache and also a ghost queue for evicted entries is used which only saves metadata not the actual entries. So if a new entries leaves the QD-queue it will be insert to ghost queue. If then an access to the same entry happens where the entry is in ghost the entry will be insert to main cache.
+Quick Demotion can be combined with different cache replacement algorithms not just FIFO.
+To some extend some cache replacement algorithms have some kind of  Quick demotion incorporated. 
+Lazy Promotion tries to maintain hot entries in cache with minimal overhead.
+To achieve this Promotion only happens at eviction not at access like LRU which decrease the handling of metadata. Example for this would be 2-bit Clock algorithm.
+This approach could be easy implemented by adding Quick Demotion and use 2-bit Clock as main cache.
+Different implementations for QD and LP possible can lead to many different modular algorithms. 
+
+\section*{FrozenHot Cache: Rethinking Cache Management for Modern Hardware by \cite{qiu2023frozenhot}}
+
+This is a new cache replacement algorithms based on list.
+The cache is divided in a frozen cache and a dynamic cache.
+The frozen cache(FC) is for hot entries and if fixed to reduce latency by removing eviction and locking for those entries. 
+The Dynamic cache(DC) on the other hand is used to achieve adaptability.
+Rebuilding of the frozen cache happens periodically.
+It is possible to combine this approach with different list based caches with minimal effort.
+So this is a cache better suited for multi-threading.
  
-- maybe one or two of the cache algorithm Johannes suggested like FrozenHot, Arc, Cacheus \\
-- shepherd-Cache seems to follow the intention of "FIFO can be Better..." and could be a good candidate \\
-- CAR do something like ML-CLOCK, decide between recency and frequency but without perceptron \\
-- also a CLOCK-PRO+ exists to improve CLOCK-Pro performance \\
-- also a lot more ML algorithms exists\\
+
 
 \chapter{Evaluation}
 \label{cha:evaluation}
