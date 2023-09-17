@@ -166,12 +166,13 @@ Jun.-Prof. Dr. Michael Kuhn
 
 
 
-The table \ref{tab:caching hierarchy} shows a few examples \cite{7569243}.
-Caching is used at different level of the memory hierarchy with various cache block sizes, in software or with hardware support and for memory with different latencies.
-Therefore many different cache replacement algorithms were proposed for different use cases.
+%The table \ref{tab:caching hierarchy} shows a few examples \cite{7569243}.
+%Caching is used at different level of the memory hierarchy with various cache block sizes, in software or with hardware support and for memory with different latencies.
+%Therefore many different cache replacement algorithms were proposed for different use cases.
 
 % could describe why clock-based algorithm and not list based were considered.
 
+\todo[inline]{need to rewrite, most of it moved to Background}
 
 \section{Contribution}
 % check if contribution or contributions is right
@@ -198,7 +199,7 @@ Therefore many different cache replacement algorithms were proposed for differen
 %Unlike the B-tree, the $B^{\epsilon}$-tree has a buffer for each node, where changes to the subtree associated with the node are stored and
 %only when the buffer overflows, the changes are written to the nodes of the subtree, which reduces the number of write operations and the data fragmantation.
 
-The idee for the $B^{\epsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the tradeoff between insertions and queries for comparison-based external memory dictionaries.
+The idea for the $B^{\epsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the trade off between insertions and queries for comparison-based external memory dictionaries.
 
 The basis for $B^{\epsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
 because the entire node must be updated for each small write.
@@ -284,13 +285,41 @@ The last layer, the \emph{Vdev Layer} is responsible for actually reading and wr
 Single disk, multiple disks or RAID-like configurations can be used.
 
 \section{Caching}
-\subsection{Overview}
-There is a large gap between cpu frequency, which is much faster, and  latency and bandwidth of memory.
-To reduce the gap and also reduce the cost of a system, memory is arranged in a hierarchy.
-Fast but expensive Memory at the top and descending slower but cheaper Memory.
-The goal is to find balance between performance, latency and bandwidth on one side and cost on the other side.
+%There is a large gap between cpu frequency, which is much faster, and  latency and bandwidth of memory.
+%To reduce the gap and also reduce the cost of a system, memory is arranged in a hierarchy.
+%Fast but expensive Memory at the top and descending slower but cheaper Memory.
+%The goal is to find balance between performance, latency and bandwidth on one side and cost on the other side.
+Since the 1980s, CPU performance and clock frequency has grown faster than DRAM latency and bandwidth, so that CPU performance is several orders of magnitude higher today.
+One of the reasons for this is that in the past CPU and memory were optimized according to different goals.
+CPUs were optimized to achieve higher clock speeds through techniques such as instruction pipelining, out-of-order execution, instruction-level parallelism, or branch prediction.
+DRAM and hard disks, on the other hand, have been optimized primarily for higher memory capacity.
+This leads to the "processor-memory performance gap", also known as the "memory wall" problem \cite{wulf1995hitting}, as shown in the figure.
 
-\todo[inline]{insert image for memory hierarchy, use it to explain}
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.5]{processor_memory_gap.pdf}
+	\caption{Processor-Memory gap, figure from \cite{cpu-mem-gap}}
+		\label{fig:processor memory gap}
+\end{figure}
+
+To reduce this problem ,the memory is built up hierarchically, as shown in figure \ref{fig:memory hierarchy}.
+The memory is ordered from fast, expensive with small capacity, the register for each CPU-core, to increasingly slower, cheaper with higher capacity at the bottom of the hierarchy, which are hard-drives in some cases even tape drives.
+The goal of this approach is to achieve a high performance with low cost and high memory capacity.
+
+
+
+
+
+
+\newpage
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.6]{ComputerMemoryHierarchy.pdf}
+	\caption{Memory Hierarchy}
+		\label{fig:memory hierarchy}
+\end{figure}
+\todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
 
 % I need to formulate this better
 Caching refers to a fast and often smaller primary memory in front of a larger but slower secondary memory, in which the most recently or most frequently used data from the secondary memory is stored for faster access.
@@ -302,9 +331,39 @@ The size of a cache line differs based on size of the cache.
 
 Due to the use of a memory hierarchy, caching is used in several places, as shown in table \ref{tab:caching hierarchy} and can either be handle in hardware like the L1 and L2 cache of a cpu-core, in software like a web cache or a combination of both.
 
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{2cm}|p{3cm}|}
+		\hline
+		\textbf{Cache Type} & \textbf{What Cached} & \textbf{Where Cached} & \textbf{Latency in cycles} & \textbf{Managed By}\\
+		\hline
+		Registers & 4-byte word & CPU registers & 0 & Compiler \\
+		\hline
+		TLB & Address translation & On-Chip TLB & 0 & Hardware \\
+		\hline
+		L1 cache & 32-byte block & On-Chip L1 & 1 & Hardware \\
+		\hline
+		L2 cache & 32-byte block & On-Chip L2 & 10 & Hardware \\
+		\hline
+		Virtual Memory & 4-KB page & Main Memory & 100 & Hardware + OS \\
+		\hline
+		Buffer Cache & Parts of files & Main Memory & 100 & OS \\
+		\hline
+		Network buffer cache & Parts of files & Local disk & 10,000,000 & AFS/NFS client \\
+		\hline
+		Browser cache & Web pages & Local disk & 10,000,000 & Web browser \\
+		\hline
+		Web cache & Web pages & Remote server disks & 1,000,000,000 & Web proxy server \\
+		\hline
+	\end{tabular}
+	\caption{Caching Hierarchy from \cite{7569243}}
+	\label{tab:caching hierarchy}
+\end{table}
+
 A cache hit occurs when the cache contains the requested data. If the cache is then also full and the requested entry cannot simply be added to the cache, a cache block must be found that is to be removed for the new entry.
 To find this victim entry there are several different policies.
 
+\section{Cache Replacement Policies}
 \subsection{Optimal Cache Replacement Policy}
 The optimal policy, also called Belady's policy, would be to always evict the entry that will not be needed for the longest time.
 But this is in general impossible to predict and only known after experimentation and can then be used to compare the optimal solution to other caching algorithm.
@@ -315,7 +374,8 @@ The three most used are First-in-First-out(FIFO), Least-Recently-Used(LRU) and L
 The simplest strategy is FIFO, which is not a true approximation of the Bélády's algorithm.
 With this strategy, the entry that has been in the cache the longest is always evicted first.
 This is very easy to implement and also has the advantage of not having to maintain additional data for each entry or a complex data structure. A simple linked list is sufficient.
-However, the serious disadvantage is that FIFO suffers from the Bélády's anomaly, which means that a larger cache size can lead to a higher cache miss rate. LRU and LFU do not suffer from this anomaly.
+Also FIFO better suited for cases where strict size limits must be maintained,since no metadata is used.
+However, the serious disadvantage is that FIFO suffers from the Bélády's anomaly \cite{10.1145/363011.363155} , which means that a larger cache size can lead to a higher cache miss rate. LRU and LFU do not suffer from this anomaly.
 Although FIFO is simple and easy to implement and is better suited for multi threading because no lock contention occurs when maintaining an ordered linked list during cache hits, it has worse hit rate compared to LRU and LFU.
 
 %Both, LRU and LFU are based on a ordered linked list, like FIFO.
@@ -355,14 +415,15 @@ The advantage of LFU is that entries with a low or 0 access count are removed re
 This is the reason why LFU works better than LRU in scanning scenarios.
 One problem is that in cases an entry with high access count which is then not or seldom access, is hard to evict even so it is rarely used.
 Also LFU don't use or factor in recent access pattern like LRU.
-To mitigate this case, aging is used, i.e. after a specified time the counter is reset or decreased.
+To mitigate this case, aging is used, i.e. after a specified time the counter is reset or decreased or only frequency of windows are used.
 But this is extra work.
 % sources: "An experimental comparison of cache algorithms"
 % "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
 % wikipedia
+% \cite{karakostas2000practical} -> lfu often used for web caches
 
-\subsection{Improved cache Replacement Policies}
-
+\section{Improved cache Replacement Policies}
+\subsection{Overview}
 LRU is simple, uses very limited information and works good in cases of strong locality.
 Also LRU is the most used or the most policies are based on LRU.
 But the downside is scan and loop cases in which LFU performs better.
@@ -415,41 +476,7 @@ Another example is Learning-based Page Replacement (LPR) by \cite{kim2022lpr} wh
 uses LRU and MRU and learn the weighting factor between the two policies through online through reinforcement learning.
 ML-clock also falls into this category.
 
-
-\begin{table}[ht]
-	\centering
-	\begin{tabular}{|l|l|l|l|l|}
-		\hline
-		\textbf{Cache Type} & \textbf{What Cached} & \textbf{Where Cached} & \textbf{Latency} & \textbf{Managed By}\\
-		 &  &  & \textbf{in cycles} &  \\
-		\hline
-		\hline
-		Registers & 4-byte word & CPU registers & 0 & Compiler \\
-		\hline
-		TLB & Address translation & On-Chip TLB & 0 & Hardware \\
-		\hline
-		L1 cache & 32-byte block & On-Chip L1 & 1 & Hardware \\
-		\hline
-		L2 cache & 32-byte block & On-Chip L2 & 10 & Hardware \\
-		\hline
-		Virtual Memory & 4-KB page & Main Memory & 100 & Hardware + OS \\
-		\hline
-		Buffer Cache & Parts of files & Main Memory & 100 & OS \\
-		\hline
-		Network buffer cache & Parts of files & Local disk & 10,000,000 & AFS/NFS client \\
-		\hline
-		Browser cache & Web pages & Local disk & 10,000,000 & Web browser \\
-		\hline
-		Web cache & Web pages & Remote server disks & 1,000,000,000 & Web proxy server \\
-		\hline
-	\end{tabular}
-	\caption{Caching Hierarchy from \cite{7569243}}
-	\label{tab:caching hierarchy}
-\end{table}
-
-
-
-\section{CLOCK}
+\subsection{CLOCK}
 %- history of clock \\
 %- low overhead like FIFO but an LRU aproximation -> citation from "Multics paging experiment..."\\
 %- widely used \\
@@ -467,7 +494,40 @@ First, we look at the entry to which the hand is pointing. If the reference bit 
 If the reference bit is 1, we set the reference to 0 and move the pointer to the next entry.
 These steps are repeated until we find an entry with an unset reference bit.
 
-\todo[inline]{probably better to use a diagram to show how clock is working}
+\newpage
+% should try to get listing on one page, better to understand that way
+\begin{lstlisting}[mathescape=true,caption=Clock replacement algorithm in pseudocode,label=lst:clock-algorithm]
+$\textcolor{ovgu-blue}{Input}$
+	Clk: Clock
+	entry: entry on I/O request
+
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+	// cache hit
+	if entry.referenceBit == false $\textcolor{ovgu-blue}{then}$
+		entry.referenceBit = true
+	$\textcolor{ovgu-blue}{end \ if}$
+else
+	// cache miss
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+		// evict one entry
+		while Clk.isFull() == true
+			if Clk.hand.referenceBit == true $\textcolor{ovgu-blue}{then}$
+				// second chance if reference bit was set
+				Clk.hand.referenceBit = false
+				Clk.hand = Clk.hand.next
+			else
+				// found entry for eviction 
+				evict-candi = Clk.hand
+				Clk.hand = Clk.hand.next
+				Clk.evict(evict-candi}
+			$\textcolor{ovgu-blue}{end \ if}$
+		$\textcolor{ovgu-blue}{end \ while}$
+	$\textcolor{ovgu-blue}{end \ if}$
+	// insert entry to clock
+	Clk.insert(entry)
+$\textcolor{ovgu-blue}{end \ if}$	
+return entry 
+\end{lstlisting}
 
 Clock also remove the lock contention problem of LRU.
 For LRU each cache hit change the position of an entry in the LRU queue.
@@ -478,7 +538,50 @@ Due to its simplicity and good performance in most cases, the clock algorithm is
 
  \todo[inline]{search for software which use clock as example with source}
 
-\section{CLOCK-PRO}
+\subsection{K-CLOCK}
+
+Similar to normal clock algorithms but used a counter instead of just a bit for entry accesses.
+The variable k can be choosen usually k=2 gives best performance.
+Implemented in Haura with k=2.
+Described in \cite{corbato1968paging} as a variation of the original clock algorithm.
+K-Clock is similar to LRU-K as described in \cite{o1993lru} but clock-based not list-based.
+It has the advantage that frequently accessed entries have a chance to stay longer in cache and new entries can leave the cache fast, leads to better performance in scan workloads.
+
+\begin{lstlisting}[mathescape=true,caption=K-Clock replacement algorithm in pseudocode,label=lst:k-clock-algorithm]
+$\textcolor{ovgu-blue}{Input}$
+	Clk: Clock
+	entry: entry on I/O request
+	K: Number of max references stored per entry
+
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+	// cache hit
+	if entry.referenceCount < K $\textcolor{ovgu-blue}{then}$
+		entry.referenceCount += 1
+	$\textcolor{ovgu-blue}{end \ if}$
+else
+	// cache miss
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+		// evict one entry
+		while Clk.isFull() == true
+			if Clk.hand.referenceCount > 1 $\textcolor{ovgu-blue}{then}$
+				// decrease reference count 
+				Clk.hand.referenceCount -= 1
+				Clk.hand = Clk.hand.next
+			else
+				// found entry for eviction 
+				evict-candi = Clk.hand
+				Clk.hand = Clk.hand.next
+				Clk.evict(evict-candi}
+			$\textcolor{ovgu-blue}{end \ if}$
+		$\textcolor{ovgu-blue}{end \ while}$
+	$\textcolor{ovgu-blue}{end \ if}$
+	// insert entry to clock
+	Clk.insert(entry)
+$\textcolor{ovgu-blue}{end \ if}$
+return entry 
+\end{lstlisting}
+
+\subsection{CLOCK-PRO}
 %- improvement of clock algorithm \\
 %- should work better in cases clock has poor performance \\
 %- scanning or looping over data\\
@@ -531,6 +634,102 @@ The test-hand points to the last cold page in the test period. Any cold entry wh
 
 \todo[inline]{make a diagram to show finding of eviction candidate}
 \todo[inline]{decide if I want to use block, page or entry, shouldn't mix them up}
+\newpage
+\begin{lstlisting}[mathescape=true,caption=Clock-pro replacement algorithm in pseudocode,label=lst:clock-pro-algorithm]
+$\textcolor{ovgu-blue}{Input}$
+	Clk: Clock
+	entry: entry on I/O request
+
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+	// cache hit
+	if entry.referenceBit == false $\textcolor{ovgu-blue}{then}$
+		entry.referenceBit = true
+	$\textcolor{ovgu-blue}{end \ if}$
+else
+	// cache miss
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+		while Clk.countHot + Clk.countCold >= Clk.capacity
+			// run cold-hand to find evict candidate
+			evict-candi = Clk.coldHand
+			if evict-candi.ColdBit == true 
+				if evict-candi.referenceBit == true
+					// turn evict-candi to hot entry
+					evict-candi.HotBit == true
+					evict-candi.ColdBit == false
+					Clk.countHot += 1
+					Clk.countCold -= 1
+				else
+					// turn resident Cold entry to non-resident Cold entry
+					// only retain key and metadata
+					Clk.turnNonResident(evict-candi)
+					Clk.countCold -= 1
+					Clk.countTest += 1	
+				$\textcolor{ovgu-blue}{end \ if}$
+			$\textcolor{ovgu-blue}{end \ if}$
+			// move test hand if necessary
+			while Clk.countTest > Clk.testCapacity
+				// test hand turns resident cold entry to non-resident cold entry
+				// if still in test-period
+				entry = Clk.testHand
+				if entry.testBit == true
+					Clk.testHand = Clk.testHand.next
+					Clk.removeNonResidentEntry(entry)
+					Clk.countTest -= 1
+					if Clk.coldCapacity > 1
+						Clk.coldCapacity -= 1
+					$\textcolor{ovgu-blue}{end \ if}$
+				$\textcolor{ovgu-blue}{end \ if}$
+				Clk.testHand = Clk.testHand.next
+			$\textcolor{ovgu-blue}{end \ while}$
+			// move cold hand
+			Clk.coldHand = Clk.coldHand.next
+			// move hot hand if necessary
+			while Clk.countHot > Clk.capacity - Clk.coldCapacity
+				// hot hand removes reference bit on hot entry 
+				// or turn not referenced hot entry to cold entry
+				entry = Clk.hotHand
+				if entry.hotBit == true
+					if entry.referenceBit == true 
+						entry.referenceBit == false
+					else
+						entry.hotBit = false
+						entry.coldBit = true
+						Clk.countHot -= 1
+						Clk.countCold += 1
+					$\textcolor{ovgu-blue}{end \ if}$
+				$\textcolor{ovgu-blue}{end \ if}$
+				Clk.hotHand = Clk.hotHand.next
+			$\textcolor{ovgu-blue}{end \ while}$
+		$\textcolor{ovgu-blue}{end \ while}$
+	Clk.insert(entry)
+$\textcolor{ovgu-blue}{end \ if}$	
+return entry 
+\end{lstlisting}
+\todo[inline]{maybe divide in two parts, eviction in own listing, it could be a bit long}
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{|c|c|c|}
+		\hline
+		\textbf{Predicted Value} & \textbf{Predicted Value} & \textbf{Victim Entry} \\
+		\textbf{(C-Candidate)} & \textbf{(D-Candidate)} & \\
+		\hline
+		0 & 0 & C-Candidate \\
+		\hline
+		0 & 1 & C-Candidate \\
+		\hline
+		1 & 0 & D-Candidate \\
+		\hline
+		1 & 1 & C-Candidate \\
+		\hline
+	\end{tabular}
+	\caption{Preference rules for victim entry}
+	\label{tab:caching hierarchy}
+\end{table}
+
+
+
+
 
 To make clock-pro adaptable the ration for hot to cold entries is not fixed, unlike LIRS with has a fixed parameter for this.
 Also the ratio influence if clock-pro behaves more like LRU and less like LIRS.
@@ -545,7 +744,7 @@ This will also adjust the speed  for cold- and hot-hand.
 
 So clock-pro has the advantage of LRU in case of strong locality and better performance like LIRS in case of weak locality.
 
-\section{ML-CLOCK}
+\subsection{ML-CLOCK}
 %- newest algorithm of this three\\
 %- based on single layer perceptron and online learning \\
 %- also uses clock approach for efficient access compared to list based\\
@@ -614,7 +813,47 @@ The ghost queue can hold at most the same number of entries as the circular list
 Each time a new entry is added to the ghost queue and the ghost queue is full, a learning operation is triggered.
 Useful because every evicted entries can be used to calibrate the SLP.
 
-\todo[inline]{insert diagram or pseudocode to show finding of eviction candidate}
+\newpage
+\begin{lstlisting}[mathescape=true,caption=K-Clock replacement algorithm in pseudocode,label=lst:ml-clock-algorithm]
+$\textcolor{ovgu-blue}{Input}$
+	Clk: Clock
+	hand: hand is the entry the clock hand is pointing to
+	entry: entry on I/O request
+	GhostQ: Ghost Queue
+
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+	// trigger learning operation
+	learning(entry, 1)
+	return entry
+else
+	// cache miss
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+		// scan clean pages at the C-hand's location
+		C-candi = Clk.findCleanCandidate()
+		// scan dirty pages at the D-hand's location
+		// in a sequential order (i.e, LBA)
+		D-Candi = Clk.findDirtyCandidate()
+		victim = prediction(C-candi, D-candi)
+		// check if victim is in ghost queue
+		if GhostQ.findPage(victim) == true $\textcolor{ovgu-blue}{then}$
+			// ready to promote a entry to clock
+			learning(entry, 1)
+			GhostQ.deleteEntry(victim)
+		else
+			if GhostQ.isFull() == true $\textcolor{ovgu-blue}{then}$
+				// evict a page on ghost queue with learning
+				learning(GhostQ.tail, 0)
+				GhostQ.deleteEntry(GhostQ.tail)
+			$\textcolor{ovgu-blue}{end \ if}$
+			GhostQ.insertEntry(victim)
+		$\textcolor{ovgu-blue}{end \ if}$
+		Clk.evict(victim)
+	$\textcolor{ovgu-blue}{end \ if}$
+	// insert entry to clock
+	Clk.insert(entry)
+$\textcolor{ovgu-blue}{end \ if}$
+return entry 
+\end{lstlisting}
 \todo[inline]{show table with preference rules for c- and d-candidate}
 
 \chapter{Design and Implementation}
@@ -684,8 +923,18 @@ The Dynamic cache(DC) on the other hand is used to achieve adaptability.
 Rebuilding of the frozen cache happens periodically.
 It is possible to combine this approach with different list based caches with minimal effort.
 So this is a cache better suited for multi-threading.
- 
 
+\section*{TinyLFU: A highly efficient cache admission policy by \cite{einziger2017tinylfu}}
+
+This is a lfu based cacehe replacement algorithm which uses a Bloom-Filter to approximate the frequency information for the cache entries with a relatively small memory usage.
+So even for large caches which can't be entirely in RAM the Bloom-Filter is small enough to fit in to RAM.
+It is based on the assumption of a skewed accesses distribution like zipfian.
+Also a small window, a FIFO queue is used to bring requested entries into the cache and then
+with the help of the frequency statistic in Bloom-filter the algorithm decide if it is better to bring the entry to the main cache or not. Main cache could be different caching algorithm.
+So TinyLFU has something like a Quick Demotion which means rarely used entries leave the cache quickly or are not transferred to the main cache at all.
+TinyLFU is intended for relatively large caches probably doesn't work as well on small caches ot the extra cost for bloom-filter are not justified.
+
+%clock-pro+ could also be a candidate for related work
 
 \chapter{Evaluation}
 \label{cha:evaluation}
@@ -704,13 +953,21 @@ So this is a cache better suited for multi-threading.
 % possible structure
 \section{Setup}
 
+- used my desktop-computer
+- cache in RAM 
+- Haura on SSD Samsung 870
+
+
 \section{Methodology}
 - synthetic benchmarks with fio zipf and random, if I get random to work\\
 - zip benchmark with linux kernel source files\\
+% \cite{karakostas2000practical} -> contains zipfian distribution as use case for webcaches
+% in "traffic analysis of a web proxy caching hierarchy" also zipf distribution mentioned
 - also try to find a trace with larger files then linux source files\\
 
 \section{Results}
 
+- problems with results, capacity management doesn't work in all cases
 
 \chapter{Conclusion}
 \label{cha:conclusion}
