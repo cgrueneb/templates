@@ -284,16 +284,13 @@ The user can decide how the used hardware falls into these tiers. Also, not all 
 The last layer, the \emph{Vdev Layer} is responsible for actually reading and writing data from the disks.
 Single disk, multiple disks or RAID-like configurations can be used.
 
-\section{Caching}
-%There is a large gap between cpu frequency, which is much faster, and  latency and bandwidth of memory.
-%To reduce the gap and also reduce the cost of a system, memory is arranged in a hierarchy.
-%Fast but expensive Memory at the top and descending slower but cheaper Memory.
-%The goal is to find balance between performance, latency and bandwidth on one side and cost on the other side.
-Since the 1980s, CPU performance and clock frequency has grown faster than DRAM latency and bandwidth, so that CPU performance is several orders of magnitude higher today.
-One of the reasons for this is that in the past CPU and memory were optimized according to different goals.
-CPUs were optimized to achieve higher clock speeds through techniques such as instruction pipelining, out-of-order execution, instruction-level parallelism, or branch prediction.
-DRAM and hard disks, on the other hand, have been optimized primarily for higher memory capacity.
-This leads to the "processor-memory performance gap", also known as the "memory wall" problem \cite{wulf1995hitting}, as shown in the figure.
+\section{Memory Hierarchy}
+Since the invention of integrated circuits in 1959, CPU performance has grown faster than main memory performance.
+Figure \ref{fig:processor memory gap} shows the improvement in processor performance and DRAM performance since the 1980s.
+This leads to the "processor-memory performance gap", also known as the "memory wall" problem \cite{wulf1995hitting}.
+One of the reasons for this is that in the semiconductor industry, CPU and memory are separate domains and have been optimized for different goals.
+CPUs have been optimized for higher clock frequency, whereas DRAM and hard disks have been optimized primarily for higher memory capacity \cite{cpu-mem-gap}.
+Even though the rates of increase in single-core performance have slowed down and thus the performance gap between processor and memory is growing more slowly, the use of multi-core processors has increased the bandwidth requirements so that the main memory must support more memory accesses.
 
 \begin{figure}[ht]
 	\centering
@@ -302,14 +299,9 @@ This leads to the "processor-memory performance gap", also known as the "memory 
 		\label{fig:processor memory gap}
 \end{figure}
 
-To reduce this problem ,the memory is built up hierarchically, as shown in figure \ref{fig:memory hierarchy}.
-The memory is ordered from fast, expensive with small capacity, the register for each CPU-core, to increasingly slower, cheaper with higher capacity at the bottom of the hierarchy, which are hard-drives in some cases even tape drives.
-The goal of this approach is to achieve a high performance with low cost and high memory capacity.
-
-
-
-
-
+To reduce the processor-memory performance gap, memory is built up hierarchically, as shown in figure \ref{fig:memory hierarchy}.
+The memory is ordered from fast, expensive and low capacity, which is close to the processor, to progressively slower, cheaper and higher capacity, which is further away from the processor.
+The goal of the memory hierarchy is to develop systems that have enough fast memory, CPU cache and DRAM to not slow down the CPU significantly and on the other hand, have as much memory capacity as necessary provided by using hard disks, solid state disk or flash memory without excessive costs.
 
 \newpage
 
@@ -321,15 +313,21 @@ The goal of this approach is to achieve a high performance with low cost and hig
 \end{figure}
 \todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
 
-% I need to formulate this better
-Caching refers to a fast and often smaller primary memory in front of a larger but slower secondary memory, in which the most recently or most frequently used data from the secondary memory is stored for faster access.
-It can also mean that data from a remote memory is stored in local memory for faster access, such as a web cache.
-The idea of caching is based on the assumption locality.
-Mainly temporal locality, when a datum is access it will likely be  accessed again and spatial locality, which means that when a datum is access it is likely that a datum nearby will be accessed in the near future.
-For spatial locality usually a block, also called cache line, of many data will be placed and evicted in the cache.
-The size of a cache line differs based on size of the cache.
 
-Due to the use of a memory hierarchy, caching is used in several places, as shown in table \ref{tab:caching hierarchy} and can either be handle in hardware like the L1 and L2 cache of a cpu-core, in software like a web cache or a combination of both.
+\section{Caching}
+%Due to the use of a memory hierarchy, caching is used in several places, as shown in table \ref{tab:caching hierarchy} and can either be handle in hardware like the L1 and L2 cache of a cpu-core, in software like a web cache or a combination of both.
+
+Closely related to the memory hierarchy is caching.
+Caching refers to a fast and smaller primary memory in front of a larger but slower secondary memory, so that requested data can be served faster from the primary memory instead of fetching the data from the slower memory, which improves latency and throughput and also reduces cost by using less faster memory.
+Caching can also mean that data from a remote memory is stored in alocal memory for faster access, such as web cache.
+The idea of caching is based on the assumption temporal and spatial locality.
+Temporal locality means that a datum accessed in the past is likely to be accessed again, and
+spatial locality means that when a datum is accessed, a nearby datum in memory is also likely to be accessed.
+To take advantage of spatial locality, blocks of data are considered instead of single datum.
+
+If we include caching in the memory hierarchy, each faster memory caches the slower memory below it, we also have a caching hierarchy as shown in \ref{tab:caching hierarchy}.
+Caching can be exclusively in hardware, as is the case with the CPU's L1 and L2 caches, or exclusively in software, as with the Web cache, or in a combination of both, as with the virtual memory of an operating system.
+Caching is an on going research topic and researches came up with various solution for the different use cases.
 
 \begin{table}[ht]
 	\centering
@@ -360,30 +358,49 @@ Due to the use of a memory hierarchy, caching is used in several places, as show
 	\label{tab:caching hierarchy}
 \end{table}
 
-A cache hit occurs when the cache contains the requested data. If the cache is then also full and the requested entry cannot simply be added to the cache, a cache block must be found that is to be removed for the new entry.
-To find this victim entry there are several different policies.
+A cache hit occurs when the requested data is in the cache.
+If the requested data is not in the cache, there is a cache miss.
+Furthermore if the cache is full and a cache miss occurs we have do decide which cache block will be evicted to move the requested block into the cache.
+This is one of the main problems of caches. If we evict an cache entry which we will need in the recent future we have an additional cache miss, so we want to avoid that.
+To decide which cache entry will be evicted cache replacement policies are used.
+
+When the cache is full and a cache miss occurs, we have to decide which cahe entry tor remove in order to move the requested block into the cache.
+This is one of the main problems of caches. If we displace a cache entry that we will need in the near future, we will have an additional cache miss, which we want to avoid.
+To decide which cache entry to remove, heuristics, the cache replacement policies, are used.
 
 \section{Cache Replacement Policies}
 \subsection{Optimal Cache Replacement Policy}
-The optimal policy, also called Belady's policy, would be to always evict the entry that will not be needed for the longest time.
-But this is in general impossible to predict and only known after experimentation and can then be used to compare the optimal solution to other caching algorithm.
-Since the optimal solution cannot be obtained, different approximations are used.
-The three most used are First-in-First-out(FIFO), Least-Recently-Used(LRU) and Least-Frequently-Used(LFU).
+The theoretically optimal cache replacement policy is Bélády's algorithm (also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
+This algorithm always evicts the cache entry whose next use is furthest in the future.
+The problem is that this information is usually not available during runtime, but only after an application has ended.
+Even though this optimal algorithm is not used in any real system, it is useful for theoretical comparison with other 
+Cache replacement algorithm.
+Furthermore, many improved cache replacement strategies attempt to approximate the optimal cache replacement strategy.
+Next, I would like to present three early developed cache replacement policies that are still in use, but also form the basis for further improved policies.
+
 
 \subsection{FIFO}
-The simplest strategy is FIFO, which is not a true approximation of the Bélády's algorithm.
-With this strategy, the entry that has been in the cache the longest is always evicted first.
-This is very easy to implement and also has the advantage of not having to maintain additional data for each entry or a complex data structure. A simple linked list is sufficient.
-Also FIFO better suited for cases where strict size limits must be maintained,since no metadata is used.
-However, the serious disadvantage is that FIFO suffers from the Bélády's anomaly \cite{10.1145/363011.363155} , which means that a larger cache size can lead to a higher cache miss rate. LRU and LFU do not suffer from this anomaly.
-Although FIFO is simple and easy to implement and is better suited for multi threading because no lock contention occurs when maintaining an ordered linked list during cache hits, it has worse hit rate compared to LRU and LFU.
+% could be mention the time complexity
 
-%Both, LRU and LFU are based on a ordered linked list, like FIFO.
-%LRU ordered based on the recency of the last access and LFU based on the access frequency.
-%So both have to save extra data for every entry and also have to maintain a ordered linked list which FIFO doesn't.
-%At the cost of more effort, a better hit rate is achieved.
-%Both LRU and LFU are to expensive and only approximations are used.
-% better describe both separately  
+First in, First out (FIFO) is a very simple cache replacement policy.
+All cache entries are stored in a queue based on a single linked list.
+Each time a cache entry needs to be evicted, the entry that has been in the cache the longest is removed.
+This is the entry at the front of the queue, and any new entry is inserted at the back of the queue. Both operations have a constant O(1) time complexity.
+So before a cache entry will be evicted, it has to go through the entire queue.
+
+The advantages of FIFO are that it is simple and easy to implement.
+Also no further metadata needs to be saved for each entry so that on each cache hit we doesn't need to update the queue.
+This is advantageous when multiple tasks can access the cache, because then 
+we don't need locks to managed the access.
+Furthermore, the absents of metadata and additional data structures make FIFO better suited for cases where strict size constraints must be met. 
+We will see later that other cache replacement algorithms have ghost queues or multiple queues that can shrink and grow. So the size 
+of a FIFO cache is predictable, or rather, there is a minimal memory overhead for FIFO compared to other replacement strategies.
+
+However, the assumption that the entry with the longest time in the cache is always the best candidate for removal is far too 
+simplistic and often more advanced cache replacement algorithms significantly defeat FIFO \cite{van1992lru}.
+One reason for this is that it does not distinguish between frequently or recently accessed entries that should remain in the cache, and new entries that are rarely accessed again. Ever entry is treated equally. This can lead to many unnecessary evictions.
+Another disadvantage is that FIFO suffer from the Bélády's anomaly \cite{10.1145/363011.363155} which means that an increased cache can lead to an increased cache miss rate, Least-Recently-Used replacement policy for example doesn't suffer from the Bélády's anomaly .
+
 
 \subsection{Least Recently Used}
 Another often used cache replacement policy is Least-Recently-Used(LRU).
