@@ -319,14 +319,15 @@ The goal of the memory hierarchy is to develop systems that have enough fast mem
 
 Closely related to the memory hierarchy is caching.
 Caching refers to a fast and smaller primary memory in front of a larger but slower secondary memory, so that requested data can be served faster from the primary memory instead of fetching the data from the slower memory, which improves latency and throughput and also reduces cost by using less faster memory.
-Caching can also mean that data from a remote memory is stored in alocal memory for faster access, such as web cache.
-The idea of caching is based on the assumption temporal and spatial locality.
+Caching can also mean that data from a remote memory is stored in a local memory for faster access, such as web cache.
+The idea of caching is based on the assumption of temporal and spatial locality.
 Temporal locality means that a datum accessed in the past is likely to be accessed again, and
 spatial locality means that when a datum is accessed, a nearby datum in memory is also likely to be accessed.
-To take advantage of spatial locality, blocks of data are considered instead of single datum.
+To take advantage of spatial locality, blocks of data are considered instead of single datum as seen in \ref{tab:caching hierarchy}.
 
-If we include caching in the memory hierarchy, each faster memory caches the slower memory below it, we also have a caching hierarchy as shown in \ref{tab:caching hierarchy}.
-Caching can be exclusively in hardware, as is the case with the CPU's L1 and L2 caches, or exclusively in software, as with the Web cache, or in a combination of both, as with the virtual memory of an operating system.
+If we include caching in the memory hierarchy so that each faster memory caches the slower memory below it, we also have a caching hierarchy as shown in \ref{tab:caching hierarchy}.
+Caching can be done exclusively in hardware, as is the case with the CPU's L1 and L2 caches, or exclusively in software, as with the Web cache, or in a combination of both, as with the virtual memory of an operating system.
+% think that should be formulated differently
 Caching is an on going research topic and researches came up with various solution for the different use cases.
 
 \begin{table}[ht]
@@ -368,6 +369,14 @@ When the cache is full and a cache miss occurs, we have to decide which cahe ent
 This is one of the main problems of caches. If we displace a cache entry that we will need in the near future, we will have an additional cache miss, which we want to avoid.
 To decide which cache entry to remove, heuristics, the cache replacement policies, are used.
 
+The advantage of caching is that the latency and bandwidth or both are increased.
+But there are also drawbacks.
+If we use caching we have redundant data copies in each cache, which on the one hand means increased power consumption.
+Each extra copy and move of data consumes additional power.
+And on the other hand, if we have redundant data, there is an additional effort to keep the data consistent.
+For example, when a cache entry is modified, we need to write the data back to the original location, and we need to prevent multiple tasks from writing to a cache entry at the same time.
+
+
 \section{Cache Replacement Policies}
 \subsection{Optimal Cache Replacement Policy}
 The theoretically optimal cache replacement policy is Bélády's algorithm (also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
@@ -400,23 +409,31 @@ However, the assumption that the entry with the longest time in the cache is alw
 simplistic and often more advanced cache replacement algorithms significantly defeat FIFO \cite{van1992lru}.
 One reason for this is that it does not distinguish between frequently or recently accessed entries that should remain in the cache, and new entries that are rarely accessed again. Ever entry is treated equally. This can lead to many unnecessary evictions.
 Another disadvantage is that FIFO suffer from the Bélády's anomaly \cite{10.1145/363011.363155} which means that an increased cache can lead to an increased cache miss rate, Least-Recently-Used replacement policy for example doesn't suffer from the Bélády's anomaly .
-
+%thrashing could be insert as disadvantage 
 
 \subsection{Least Recently Used}
-Another often used cache replacement policy is Least-Recently-Used(LRU).
-LRU is an approximation of the optimal Bélády's algorithm.
-But in contrast to Bélády's algorithm LRU is an online algorithm and has to select the eviction entry only based on past information.
-All cache entries are sorted based on there recency in a linked list.
-Each time an entry needs to be evicted, the entry that has not been used for the longest time is evicted.
-One problem is that an ordered list is used, i.e. after each cache hit the order in the list may have to be changed, which takes extra time and is done behind a lock for multi threading applications to prevent inconsistencies.
-Also to use the last actual access time is to expensive and only approximations are used.
-LRU works reasonably well in application with strong locality, CPU caches for example.
-On the other hand for applications in which several entries are accesses repeatedly, like looping over an array, LRU is not the best policy, due to neglect of frequency information.
-Furthermore applications with repetitive access patterns larger then the cache size are not handled well and lead to higher miss ratio.
-Usually LRU has better hit ratio then FIFO \cite{van1992lru}.
-Cache replacement algorithms based on LRU are widely used for example ... .
+%Another often used cache replacement policy is Least-Recently-Used(LRU).
+%LRU is an approximation of the optimal Bélády's algorithm.
+%But in contrast to Bélády's algorithm LRU is an online algorithm and has to select the eviction entry only based on past information.
+%All cache entries are sorted based on there recency in a linked list.
+%Each time an entry needs to be evicted, the entry that has not been used for the longest time is evicted.
+%One problem is that an ordered list is used, i.e. after each cache hit the order in the list may have to be changed, which takes extra time and is done behind a lock for multi threading applications to prevent inconsistencies.
+%Also to use the last actual access time is to expensive and only approximations are used.
+%LRU works reasonably well in application with strong locality, CPU caches for example.
+%On the other hand for applications in which several entries are accesses repeatedly, like looping over an array, LRU is not the best policy, due to neglect of frequency information.
+%Furthermore applications with repetitive access patterns larger then the cache size are not handled well and lead to higher miss ratio.
+%Usually LRU has better hit ratio then FIFO \cite{van1992lru}.
+%Cache replacement algorithms based on LRU are widely used for example ... .
 % sources: "An experimental comparison of cache algorithms"
 % "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
+
+Another widely used cache replacement policy is Least-Recently-Used(LRU).
+It dates back to at least 1965 \cite{denning1980working} and is probably even older.
+The idea of LRU is that whenever an entry needs to be evicted, the entry that has not been accessed for the longest time is evicted.
+
+All cache entries are stored in a priority queue, usually implemented as double linked list, sorted by there last access time.
+Each new entry is insert at the front of the priority queue. For eviction always
+
 
 \subsection{Least Frequently Used}
 The last important cache replacement strategy is Least-Frequently-Used (LFU).
@@ -438,6 +455,10 @@ But this is extra work.
 % "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
 % wikipedia
 % \cite{karakostas2000practical} -> lfu often used for web caches
+
+
+
+
 
 \section{Improved cache Replacement Policies}
 \subsection{Overview}
@@ -724,30 +745,6 @@ return entry
 \end{lstlisting}
 \todo[inline]{maybe divide in two parts, eviction in own listing, it could be a bit long}
 
-\begin{table}[ht]
-	\centering
-	\begin{tabular}{|c|c|c|}
-		\hline
-		\textbf{Predicted Value} & \textbf{Predicted Value} & \textbf{Victim Entry} \\
-		\textbf{(C-Candidate)} & \textbf{(D-Candidate)} & \\
-		\hline
-		0 & 0 & C-Candidate \\
-		\hline
-		0 & 1 & C-Candidate \\
-		\hline
-		1 & 0 & D-Candidate \\
-		\hline
-		1 & 1 & C-Candidate \\
-		\hline
-	\end{tabular}
-	\caption{Preference rules for victim entry}
-	\label{tab:caching hierarchy}
-\end{table}
-
-
-
-
-
 To make clock-pro adaptable the ration for hot to cold entries is not fixed, unlike LIRS with has a fixed parameter for this.
 Also the ratio influence if clock-pro behaves more like LRU and less like LIRS.
 The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
@@ -873,6 +870,26 @@ return entry
 \end{lstlisting}
 \todo[inline]{show table with preference rules for c- and d-candidate}
 
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{|c|c|c|}
+		\hline
+		\textbf{Predicted Value} & \textbf{Predicted Value} & \textbf{Victim Entry} \\
+		\textbf{(C-Candidate)} & \textbf{(D-Candidate)} & \\
+		\hline
+		0 & 0 & C-Candidate \\
+		\hline
+		0 & 1 & C-Candidate \\
+		\hline
+		1 & 0 & D-Candidate \\
+		\hline
+		1 & 1 & C-Candidate \\
+		\hline
+	\end{tabular}
+	\caption{Preference rules for victim entry}
+	\label{tab:ml-clock preference rules}
+\end{table}
+
 \chapter{Design and Implementation}
 \label{cha:design and implementation}
 % Design and Implementation fehlen?! als Kapitel
@@ -896,16 +913,6 @@ return entry
 % es werden Arbeiten presentiert bzw. meine Arbeit mit diesen vergliechen
 % was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
 % 5-10%, ca 2-5 Seiten
-
-%- FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion\\
-% interesting because for large storage FIFO could provide better results and could be 
-% easier to implement especially with the abstraction of the DMU 
-% 
-%- maybe one or two of the cache algorithm Johannes suggested like FrozenHot, Arc, Cacheus \\
-%- shepherd-Cache seems to follow the intention of "FIFO can be Better..." and could be a good candidate \\
-%- CAR do something like ML-CLOCK, decide between recency and frequency but without perceptron \\
-%- also a CLOCK-PRO+ exists to improve CLOCK-Pro performance \\
-%- also a lot more ML algorithms exists\\
 
 \section*{It's Time to Revisit LRU vs FIFO by \cite{eytan2020s}}
 
