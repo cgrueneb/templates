@@ -203,7 +203,7 @@ The idea for the $B^{\epsilon}$-tree was introduced by \cite{brodal2003lower} in
 
 The basis for $B^{\epsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
 because the entire node must be updated for each small write.
-However, if you reduce the node size to optimize small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
+However, if we reduce the node size to optimize for small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
 
 To optimize for both cases, the $B^{\epsilon}$-tree adds a buffer to each internal node of size $B - B^{\epsilon} $ with $ 0 \leq \epsilon < 1$ as shown in figure \ref{fig:structure B-epsilon-tree}.
 
@@ -219,14 +219,16 @@ Only when the root node's buffer is full, a batch of messages is flushed down th
 If a node needs to be split, the buffer is also split between the new nodes.
 When the insert message arrives at a leaf node, the data is added to the leaf.
 
-This behavior leads to the better insertion performance then B-trees, because insertion always happens at the root, no searching for the right insertion location necessary and 
-the actual write of data happens delayed in batches only when enough changes are accumulated in a buffer.
+This behavior leads to better insertion performance then B-trees, since insertion always occurs at the root, no searching for the correct insertion point is required, and  
+the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
 On deletion a "tombstone message" will be insert into the tree and will be flushed down the tree to a leaf, like an insertion message.
 
-For queries, in the $B^{\epsilon}$-tree, we also need to check the buffer on the way to the leaf nodes to see if there are any relevant messages.
-These messages must be processed, but this does not mean that these messages are flushed down immediately, this can happen later.
+For queries, in the $B^{\epsilon}$-tree, we also need to check buffer on the way to the leaf nodes to see if there are any relevant messages.
+These messages must be processed, but that does not mean they are flushed down immediately, this can happen later.
 
 So the $B^{\epsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
+\todo[inline]{write a bit more detailed about this}
+
 
 \section{Haura}
 %- introduce haura storage stack and explain structure\\
@@ -281,7 +283,7 @@ The \emph{Storage Pool Layer} is an abstraction over the used storage hardware.
 Furthermore the storage is divided in to tiers from \emph{Fastest}, \emph{Fast}, \emph{Slow} to \emph{Slowest}.
 The user can decide how the used hardware falls into these tiers. Also, not all tiers need to be used.
 
-The last layer, the \emph{Vdev Layer} is responsible for actually reading and writing data from the disks.
+The last layer, the \emph{Vdev Layer}, is responsible for actually reading and writing data from the disks.
 Single disk, multiple disks or RAID-like configurations can be used.
 
 \section{Memory Hierarchy}
@@ -359,11 +361,11 @@ Caching is an on going research topic and researches came up with various soluti
 	\label{tab:caching hierarchy}
 \end{table}
 
-A cache hit occurs when the requested data is in the cache.
-If the requested data is not in the cache, there is a cache miss.
-Furthermore if the cache is full and a cache miss occurs we have do decide which cache block will be evicted to move the requested block into the cache.
-This is one of the main problems of caches. If we evict an cache entry which we will need in the recent future we have an additional cache miss, so we want to avoid that.
-To decide which cache entry will be evicted cache replacement policies are used.
+%A cache hit occurs when the requested data is in the cache.
+%If the requested data is not in the cache, there is a cache miss.
+%Furthermore, if the cache is full and a cache miss occurs we have do decide which cache block will be evicted to move the requested block into the cache.
+%This is one of the main problems of caches. If we evict an cache entry which we will need in the recent future we have an additional cache miss, so we want to avoid that.
+%To decide which cache entry will be evicted cache replacement policies are used.
 
 When the cache is full and a cache miss occurs, we have to decide which cache entry tor remove in order to move the requested block into the cache.
 This is one of the main problems of caches. If we displace a cache entry that we will need in the near future, we will have an additional cache miss, which we want to avoid.
@@ -385,7 +387,7 @@ The problem is that this information is usually not available during runtime, bu
 Even though this optimal algorithm is not used in any real system, it is useful for theoretical comparison with other 
 Cache replacement algorithm.
 Furthermore, many improved cache replacement strategies attempt to approximate the optimal cache replacement strategy.
-Next, I would like to present three early developed cache replacement policies that are still in use, but also form the basis for further improved policies.
+Next, I will present three early developed cache replacement policies that are still in use, but also form the basis for further improved policies.
 
 
 \subsection{FIFO}
@@ -398,7 +400,7 @@ This is the entry at the front of the queue, and any new entry is inserted at th
 So before a cache entry will be evicted, it has to go through the entire queue.
 
 The advantages of FIFO are that it is simple and easy to implement.
-Also no further metadata needs to be saved for each entry so that on each cache hit we doesn't need to update the queue.
+Also no further metadata needs to be saved for each entry so that on each cache hit we do not need to update the queue.
 This is advantageous when multiple tasks can access the cache, because then 
 we don't need locks to managed the access.
 Furthermore, the absents of metadata and additional data structures make FIFO better suited for cases where strict size constraints must be met. 
@@ -406,9 +408,9 @@ We will see later that other cache replacement algorithms have ghost queues or m
 of a FIFO cache is predictable, or rather, there is a minimal memory overhead for FIFO compared to other replacement strategies.
 
 However, the assumption that the entry with the longest time in the cache is always the best candidate for removal is far too 
-simplistic and often more advanced cache replacement algorithms significantly defeat FIFO \cite{van1992lru}.
+simplistic and often more advanced cache replacement algorithms significantly outperform FIFO \cite{van1992lru}.
 One reason for this is that it does not distinguish between frequently or recently accessed entries that should remain in the cache, and new entries that are rarely accessed again. Ever entry is treated equally. This can lead to many unnecessary evictions.
-Another disadvantage is that FIFO suffer from the Bélády's anomaly \cite{10.1145/363011.363155} which means that an increased cache can lead to an increased cache miss rate, Least-Recently-Used replacement policy for example doesn't suffer from the Bélády's anomaly .
+Another disadvantage is that FIFO suffer from the Bélády's anomaly \cite{10.1145/363011.363155} which means that an increased cache can lead to an increased cache miss rate, Least-Recently-Used replacement policy for example doesn't suffer from the Bélády's anomaly.
 %thrashing could be insert as disadvantage 
 
 \subsection{Least Recently Used}
@@ -427,12 +429,19 @@ Another disadvantage is that FIFO suffer from the Bélády's anomaly \cite{10.11
 % sources: "An experimental comparison of cache algorithms"
 % "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
 
-Another widely used cache replacement policy is Least-Recently-Used(LRU).
+Another widely used cache replacement policy is Least Recently Used(LRU).
 It dates back to at least 1965 \cite{denning1980working} and is probably even older.
 The idea of LRU is that whenever an entry needs to be evicted, the entry that has not been accessed for the longest time is evicted.
 
 All cache entries are stored in a priority queue, usually implemented as double linked list, sorted by there last access time.
-Each new entry is insert at the front of the priority queue. For eviction always
+Each new entry is insert at the front of the priority queue and the entry at the back of the priority queue is always selected for eviction.
+In case of a cache hit, the entry that is in the priority queue is placed at the front of the queue.
+In general, it is too costly to keep track of the last access time, and only approximate values, such as age bits, are used instead.
+
+The advantages of LRU:
+- better then FIFO
+- optimal for specific cases,
+- still simple
 
 
 \subsection{Least Frequently Used}
@@ -440,15 +449,15 @@ The last important cache replacement strategy is Least-Frequently-Used (LFU).
 The idea behind this is that a cache entry that has been used frequently in the past will also be used in the future.
 When a cache miss occurs, the least frequently accessed entry will be evicted.
 In case more then one entry have the same access count we have to use recency or decide randomly which entry has to be evicted.
-Also the entries are ordered in a single linked list and each entry has an counter which increased for each access.
+Also, the entries are ordered in a single linked list and each entry has an counter which increased for each access.
 So we have the same problem as with LRU. We have to keep an ordered list.
-Like LRU often only an approximation is used because to track all information is to expensive.
+Like in LRU, often only an approximation is used because to track all information is to expensive.
 Instead of an Frequency counter for all possible entries only the entries actually in cache have a counter.
 Secondly often only a few bits are used as counter so the number of accesses is which can be tracked is limited. 
 The advantage of LFU is that entries with a low or 0 access count are removed relatively quickly, while entries with frequent access remain in the cache.
 This is the reason why LFU works better than LRU in scanning scenarios.
 One problem is that in cases an entry with high access count which is then not or seldom access, is hard to evict even so it is rarely used.
-Also LFU don't use or factor in recent access pattern like LRU.
+Also LFU do not use or factor in recent access pattern like LRU.
 To mitigate this case, aging is used, i.e. after a specified time the counter is reset or decreased or only frequency of windows are used.
 But this is extra work.
 % sources: "An experimental comparison of cache algorithms"
@@ -521,7 +530,7 @@ ML-clock also falls into this category.
 %- already implemented \\
 %- used as baseline \\
 
-Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for Multics operating system.
+Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for the Multics operating system.
 It is an approximation of the LRU (Least Recently Used) policy, but with a low runtime overhead, comparable to FIFO.
 
 Unlike previous cache replacement algorithms, clock uses a circular list with a "hand" as a pointer to the current entry.
@@ -557,7 +566,7 @@ else
 				// found entry for eviction 
 				evict-candi = Clk.hand
 				Clk.hand = Clk.hand.next
-				Clk.evict(evict-candi}
+				Clk.evict(evict-candi)
 			$\textcolor{ovgu-blue}{end \ if}$
 		$\textcolor{ovgu-blue}{end \ while}$
 	$\textcolor{ovgu-blue}{end \ if}$
@@ -569,8 +578,8 @@ return entry
 
 Clock also remove the lock contention problem of LRU.
 For LRU each cache hit change the position of an entry in the LRU queue.
-So cache hit have to be serialize behind a lock to be used in a parallel system.
-Clock doesn't have this problem, because clock don't has to maintain an ordered queue.
+So cache hit have to be serialized behind a lock to be used in a parallel system.
+Clock doesn't have this problem, because clock do not has to maintain an ordered queue.
 
 Due to its simplicity and good performance in most cases, the clock algorithm is widely used for example in Linux, Windows and NetBSD.
 
@@ -656,7 +665,7 @@ After a cold block is insert into the clock, it is in a test period.
 If an access during this test period occurs, the cold block become a hot block.
 On the other hand if the cold block is not re-access during its test period, it will be removed.
 It is possible that during the test period that the cold block will be removed from memory and became non-resident, then the meta data still remains in the clock until the cold block runs out of his test period.
-So a non-resident cold block can when a re-access occurs, became a hot block.
+So a non-resident cold block can when a re-access occurs, become a hot block.
 To generate free space only resident cold blocks are evicted.
 
 Clock-pro uses three handles instead of one like clock.
@@ -745,8 +754,8 @@ return entry
 \end{lstlisting}
 \todo[inline]{maybe divide in two parts, eviction in own listing, it could be a bit long}
 
-To make clock-pro adaptable the ration for hot to cold entries is not fixed, unlike LIRS with has a fixed parameter for this.
-Also the ratio influence if clock-pro behaves more like LRU and less like LIRS.
+To make clock-pro adaptable the ratio for hot to cold entries is not fixed, unlike LIRS which has a fixed parameter for this.
+It also influences if clock-pro behaves more like LRU and less like LIRS.
 The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
 If there are no hot entries clock-pro behaves like clock algorithm. 
 However in case of where clock algorithm struggles, loop and scans, clock-pro can achieve better results.
