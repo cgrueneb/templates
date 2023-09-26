@@ -906,29 +906,48 @@ return entry
 % Design and Implementation fehlen?! als Kapitel
 % 25-35%, ca 10-14 Seiten
 
-
+% see if I want to mention copy-on-write in background haura or somewhere else
 
 Next chapter we will show details on implementation of the actual cache and how the cache works with the different layers in haura.
 
 The cache is part of the DMU and thus part of the DML, as shown in \ref{fig:structure haura}.
 The task of the DML is to manage objects for the tree layer, which includes caching, tracking changes, and writing objects back.
-To uniquely identify objects each object has a handle, the \emph{ObjectKey}, which is an enumeration type that represents the state of the object at the last access, as shown in \ref{lst:ObjectKey enumeration}.
-The \emph{G} type in \ref{lst:ObjectKey enumeration} stands for generation and is used by the upper layer to keep track of the age of an object.
+All unmodified and all on-disk DML objects are identified by an \emph{ObjectPointer}.
 
-\begin{lstlisting}[mathescape=true,caption=ObjectKey enumeration ,label=lst:ObjectKey enumeration]
 
-pub enum ObjectKey<G> {
-    Unmodified { offset: DiskOffset, generation: G },
-    Modified(ModifiedObjectId),
-    InWriteback(ModifiedObjectId),
+\begin{lstlisting}[mathescape=true,caption=ObjectPointer struct ,label=lst:ObjectPointer struct]
+pub struct ObjectPointer<D> {
+    pub(super) decompression_tag: DecompressionTag,
+    pub(super) checksum: D,
+    pub(super) offset: DiskOffset,
+    pub(super) size: Block<u32>,
+    pub(super) info: DatasetId,
+    pub(super) generation: Generation,
 }
 \end{lstlisting}
+% pub(super) makes an item visible to the parent module. This is equivalent to pub(in super).
 
-\todo[inline]{find out what the use of "generation: G" is}
-% \cite{wiedemann2018modern} generation is used by the upper layer to track age of an object try to verify this.
+The struct fields \texttt{offset}, \texttt{size}, \texttt{checksum} and \texttt{decompression\_tag}, in listing \ref{lst:ObjectPointer struct}, are used to read an object from disk and decompress it.
+The \texttt{info} field can be used to store additional tags for an object.
+And the last field \texttt{generation} is used to track the age of an object.
 
-Thus, an object in DML (and Cache) can only be in unmodified, modified or write-back state.
+The DML objects can be called by their unique \emph{ObjRef}.
+This reference, shown in \ref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
+Thus, four states are possible unmodified, modified, in write back or incomplete.
+If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
+when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
+The incomplete state can only be reached when an object is deserialized from disk.
+If the DMU encounter an incomplete object during runtime, haura panics and crashes.
 
+\begin{lstlisting}[mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
+	label=lst:ObjRef enumeration]
+pub enum ObjRef<P> {
+    Incomplete(P),
+    Unmodified(P, PivotKey),
+    Modified(ModifiedObjectId, PivotKey),
+    InWriteback(ModifiedObjectId, PivotKey),
+}
+\end{lstlisting}
 
 \begin{figure}[ht]
 	\centering
@@ -936,6 +955,61 @@ Thus, an object in DML (and Cache) can only be in unmodified, modified or write-
 	\caption{DML state cycle, \cite{wiedemann2018modern}}
 		\label{fig:DML state cycle}
 \end{figure}
+% \cite{wiedemann2018modern} generation is used by the upper layer to track age of an object try to verify this.
+
+
+The DMU manages the cache and the states of each \emph{ObjRef} as shown in \ref{fig:DML state cycle}.
+The cycle starts with the creation of an object in modified state. When the DMU starts the write back of the object, the state
+is changed to in write back state.
+If the object is modified during write back through the steal function, it change the state back to modified.
+When the write back is finished the object state change to unmodified.
+An unmodified object can either change the state to modified if the object has been modified or evicted from cache to disk.
+And lastly, any object on disk can be fetched in cache and will be in unmodified state.
+
+For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown in \ref{lst:ObjectKey enumeration}.
+These \emph{ObjectKey} are  from the \emph{ObjRef} for each cache entry.
+Objects in incomplete state are not stored in cache.
+
+\begin{lstlisting}[mathescape=true,caption=ObjectKey enumeration,label=lst:ObjectKey enumeration]
+pub enum ObjectKey<G> {
+    Unmodified { offset: DiskOffset, generation: G },
+    Modified(ModifiedObjectId),
+    InWriteback(ModifiedObjectId),
+}
+\end{lstlisting}
+
+The DML state cycle and the management of the cache by the DMU create additonal requirements for the cache.
+Firstly, if only unmodified cache entries can be evicted, but the cache also contains cache entries which are in write back and modified state, there are cache entries which the DMU can not evict.
+These entries are pinned and the evict function of the cache must take this into account.
+This is a significant difference to all covered cache replacement policies described in \ref{cha:background}, which assume that all cache entries can always be evicted. Furthermore, eviction is usually performed by the cache itself and not triggered externally, as the DMU does in our case.
+
+Secondly, if a state of a cache entry can change, according to the DML state cycle \ref{fig:DML state cycle}, the cache must provide a function to change the \emph{ObjectKey} of an entry.
+
+Third, the cache must be able to handle cache entries of any size.
+The handling of arbitrarily sized cache entries is managed by the DMU.
+Each fetched entry is always inserted into the cache and then the eviction function is called until the cache capacity is again below the specified cache size.
+So the cache size is a soft limit that can be exceeded temporarily, not a hard limit, which would mean that the eviction function
+is called before inserting so that the cache size is never exceeded.
+
+% continue here, could show the cache trait to show the function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -946,28 +1020,6 @@ Used conditional compilation see Cargo.toml to build with different cache defaul
 
 
 
-
-
-%\todo[inline]{get syntax highlighting for Rust}
-%\begin{lstlisting}[mathescape=true,caption=simplified Cache trait,label=lst:simplified Cache trait]
-%$\textcolor{ovgu-blue}{trait}$ Cache {
-%    $\textcolor{ovgu-blue}{fn}$ new
-%    $\textcolor{ovgu-blue}{fn}$ contains_key
-%    $\textcolor{ovgu-blue}{fn}$ get
-%    $\textcolor{ovgu-blue}{fn}$ get_mut
-%    $\textcolor{ovgu-blue}{fn}$ remove
-%    $\textcolor{ovgu-blue}{fn}$ force_remove
-%    $\textcolor{ovgu-blue}{fn}$ change_key
-%    $\textcolor{ovgu-blue}{fn}$ force_change_key
-%    $\textcolor{ovgu-blue}{fn}$ evict
-%    $\textcolor{ovgu-blue}{fn}$ insert
-%    $\textcolor{ovgu-blue}{fn}$ iter
-%    $\textcolor{ovgu-blue}{fn}$ size
-%    $\textcolor{ovgu-blue}{fn}$ capacity
-%    $\textcolor{ovgu-blue}{fn}$ stats
-%    $\textcolor{ovgu-blue}{fn}$ verify
-%}
-%\end{lstlisting}
 
 
 
