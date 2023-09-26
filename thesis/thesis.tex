@@ -342,7 +342,7 @@ Caching is an on going research topic and researches came up with various soluti
 		Web cache & Web pages & Remote server disks & 1,000,000,000 & Web proxy server \\
 		\hline
 	\end{tabular}
-	\caption{Caching Hierarchy from \cite{7569243}}
+	\caption{Caching Hierarchy \cite{7569243}}
 	\label{tab:caching hierarchy}
 \end{table}
 
@@ -880,7 +880,6 @@ else
 $\textcolor{ovgu-blue}{end \ if}$
 return entry 
 \end{lstlisting}
-\todo[inline]{show table with preference rules for c- and d-candidate}
 
 \begin{table}[ht]
 	\centering
@@ -907,21 +906,125 @@ return entry
 % Design and Implementation fehlen?! als Kapitel
 % 25-35%, ca 10-14 Seiten
 
--> can start with this chapter when I decide which benchmark and metrics I want to use\\
-- fio for synthetic benchmarks -> zipf dis. and sequential should be covered\\
-- try to find traces which I can use easily \\
-- some articles uses SPEC-Benchmark traces\\
+%-> can start with this chapter when I decide which benchmark and metrics I want to use\\
+%- fio for synthetic benchmarks -> zipf dis. and sequential should be covered\\
+%- try to find traces which I can use easily \\
+%- some articles uses SPEC-Benchmark traces\\
+%
+%- general problem that we are dealing with variable sized cache entries and also \\
+%  pinning an entry is possible which increases the difficulty of implementation of most suggested algorithms\\
+%- most algorithms based an equally sized pages/entries without pinning\\
+%- ml-clock with extra locking which could lead to problems, clock and clock-pro uses atomics to prevent this
 
-- general problem that we are dealing with variable sized cache entries and also \\
-  pinning an entry is possible which increases the difficulty of implementation of most suggested algorithms\\
-- most algorithms based an equally sized pages/entries without pinning\\
-- ml-clock with extra locking which could lead to problems, clock and clock-pro uses atomics to prevent this
+%\begin{lstlisting}[mathescape=true,caption=simplified Cache trait,label=lst:simplified Cache trait]
+%$\textcolor{ovgu-blue}{trait}$ Cache {
+%	$\textcolor{ovgu-blue}{fn}$ new(capacity: usize) -> $\textcolor{ovgu-blue}{Self}$
+%	
+%    type Key: Eq + Hash;
+%    type Value;
+%    type ValueRef: AddSize + StableDeref<Target = Self::Value>;
+%    type Stats: Stats;
+%
+%    fn new(capacity: usize) -> Self;
+%    fn contains_key(&self, key: &Self::Key) -> bool;
+%    fn get(&self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
+%    fn get_mut(&mut self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
+%    fn remove<F>(&mut self, key: &Self::Key, f: F) -> Result<Self::Value, RemoveError>
+%    where
+%        F: FnOnce(&mut Self::Value) -> usize;
+%    fn force_remove(&mut self, key: &Self::Key, size: usize) -> bool;
+%    fn change_key<E, F>(&mut self, key: &Self::Key, f: F) -> Result<(), ChangeKeyError<E>>
+%    where
+%        F: FnOnce(
+%            &Self::Key,
+%            &mut Self::Value,
+%            &dyn Fn(&Self::Key) -> bool,
+%        ) -> Result<Self::Key, E>;
+%
+%    fn force_change_key(&mut self, key: &Self::Key, new_key: Self::Key) -> bool;
+%    fn evict<F>(&mut self, f: F) -> Option<(Self::Key, Self::Value)>
+%    where
+%        F: FnMut(&Self::Key, &mut Self::Value, &dyn Fn(&Self::Key) -> bool) -> Option<usize>;
+%
+%    fn insert(&mut self, key: Self::Key, value: Self::Value, size: usize);
+%    fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = &'a Self::Key> + 'a>;
+%    fn size(&self) -> usize;
+%    fn capacity(&self) -> usize;
+%    fn stats(&self) -> Self::Stats;
+%    fn verify(&mut self);
+%}
+%\end{lstlisting}
 
+Next chapter we will show details on implementation of the actual cache and how the cache works with the different layers in haura.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.4]{DML_state_cycle.pdf}
+	\caption{DML state cycle, \cite{wiedemann2018modern}}
+		\label{fig:DML state cycle}
+\end{figure}
+
+As seen in figure \ref{fig:structure haura} cache is part of the data management layer.
+
+Cache is working closely with DMU.
+The DMU calls cache, triggers eviction, removal and so on.
+-> insert DML object state cycle from wiedemann thesis
+
+
+
+
+
+
+To implement different cache need to modify src/database/mod.rs.
+Because there the DMU will be created.
+Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
+
+
+
+
+
+
+%\todo[inline]{get syntax highlighting for Rust}
+%\begin{lstlisting}[mathescape=true,caption=simplified Cache trait,label=lst:simplified Cache trait]
+%$\textcolor{ovgu-blue}{trait}$ Cache {
+%    $\textcolor{ovgu-blue}{fn}$ new
+%    $\textcolor{ovgu-blue}{fn}$ contains_key
+%    $\textcolor{ovgu-blue}{fn}$ get
+%    $\textcolor{ovgu-blue}{fn}$ get_mut
+%    $\textcolor{ovgu-blue}{fn}$ remove
+%    $\textcolor{ovgu-blue}{fn}$ force_remove
+%    $\textcolor{ovgu-blue}{fn}$ change_key
+%    $\textcolor{ovgu-blue}{fn}$ force_change_key
+%    $\textcolor{ovgu-blue}{fn}$ evict
+%    $\textcolor{ovgu-blue}{fn}$ insert
+%    $\textcolor{ovgu-blue}{fn}$ iter
+%    $\textcolor{ovgu-blue}{fn}$ size
+%    $\textcolor{ovgu-blue}{fn}$ capacity
+%    $\textcolor{ovgu-blue}{fn}$ stats
+%    $\textcolor{ovgu-blue}{fn}$ verify
+%}
+%\end{lstlisting}
+
+
+
+
+\section{CLOCK and K-CLOCK}
+
+- put together as they are very similar
+
+\section{CLOCK-PRO}
+
+- problems with recursion
+- show evict method 
+- try to make evict method more understandable
+
+\section{ML-CLOCK}
+
+- two separated clocks one for clean entries one for dirty and also order by block address 
+- lock needed for get function because entry can change clock
 
 \chapter{Related Work}
 \label{cha:related work}
-% Related Work fehlt ebennfalls 
-%
 % es werden Arbeiten presentiert bzw. meine Arbeit mit diesen vergliechen
 % was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
 % 5-10%, ca 2-5 Seiten
@@ -989,17 +1092,17 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 % possible structure
 \section{Setup}
 
-- used my desktop-computer
-- cache in RAM 
-- Haura on SSD Samsung 870
+- used ovgu cluster
+- software version 
+- haura config json
 
 
 \section{Methodology}
 - synthetic benchmarks with fio zipf and random, if I get random to work\\
 - zip benchmark with linux kernel source files\\
 % \cite{karakostas2000practical} -> contains zipfian distribution as use case for webcaches
-% in "traffic analysis of a web proxy caching hierarchy" also zipf distribution mentioned
-- also try to find a trace with larger files then linux source files\\
+- only synthetic benchmarks 
+- zipf, normal, zoned, uniform 
 
 \section{Results}
 
@@ -1029,7 +1132,14 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 
 % could also be ad the beginning
 % implement acronyms or list of Abbreviations
-% implement list of figures, list of tables and listings
+
+\setcounter{tocdepth}{1}
+\listoffigures
+
+\setcounter{tocdepth}{1}
+\listoftables
+
+\lstlistoflistings
 
 \chapter*{}
 
