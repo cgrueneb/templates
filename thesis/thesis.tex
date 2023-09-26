@@ -257,9 +257,9 @@ The \emph{database layer} sends messages to the $B^{\epsilon}$ trees consisting 
 Key-value pairs are stored in leave nodes and key-message nodes are stored in inner nodes of the tree.
 Each node is an object for the \emph{Data Management Layer} and is tracked individually.
 
-The \emph{Data Management Layer} manages objects for the \emph{Tree Layer} and \emph{database layer} which means cache objects in memory, 
+The \emph{Data Management Layer}(DML) manages objects for the \emph{Tree Layer} and \emph{database layer} which means cache objects in memory, 
 track modifications to objects and write-back modified objects.
-Main part of the \emph{Data Management Layer} is the Data Management Unit (DMU).
+Main part of the DML is the Data Management Unit (DMU).
 The DMU is shared by all trees and ensures that no irregular state can be reached.
 It takes care of critical disk management such as block allocation.
 In addition, the DMU manages the cache, which is the main topic of this work.
@@ -453,7 +453,7 @@ As metadata, we have a counter assigned for each cache entry.
 On a cache hit the counter for the entry will be incremented and the entry could change his position in the priority queue.
 
 The advantage of LFU is that frequently accessed entries remain in the cache and with constant
-access distributions, LFU has the best cache hit ratio \cite{some2017tinylfu}.
+access distributions, LFU has the best cache hit ratio \cite{einziger2017tinylfu}.
 But LFU has some  serious drawbacks.
 First, the overhead for maintaining the metadata is higher than for LRU and FIFO.
 Also, as with LRU, there is a problem with lock contention when the priority queue is updated on a cache hit.
@@ -906,72 +906,36 @@ return entry
 % Design and Implementation fehlen?! als Kapitel
 % 25-35%, ca 10-14 Seiten
 
-%-> can start with this chapter when I decide which benchmark and metrics I want to use\\
-%- fio for synthetic benchmarks -> zipf dis. and sequential should be covered\\
-%- try to find traces which I can use easily \\
-%- some articles uses SPEC-Benchmark traces\\
-%
-%- general problem that we are dealing with variable sized cache entries and also \\
-%  pinning an entry is possible which increases the difficulty of implementation of most suggested algorithms\\
-%- most algorithms based an equally sized pages/entries without pinning\\
-%- ml-clock with extra locking which could lead to problems, clock and clock-pro uses atomics to prevent this
 
-%\begin{lstlisting}[mathescape=true,caption=simplified Cache trait,label=lst:simplified Cache trait]
-%$\textcolor{ovgu-blue}{trait}$ Cache {
-%	$\textcolor{ovgu-blue}{fn}$ new(capacity: usize) -> $\textcolor{ovgu-blue}{Self}$
-%	
-%    type Key: Eq + Hash;
-%    type Value;
-%    type ValueRef: AddSize + StableDeref<Target = Self::Value>;
-%    type Stats: Stats;
-%
-%    fn new(capacity: usize) -> Self;
-%    fn contains_key(&self, key: &Self::Key) -> bool;
-%    fn get(&self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
-%    fn get_mut(&mut self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
-%    fn remove<F>(&mut self, key: &Self::Key, f: F) -> Result<Self::Value, RemoveError>
-%    where
-%        F: FnOnce(&mut Self::Value) -> usize;
-%    fn force_remove(&mut self, key: &Self::Key, size: usize) -> bool;
-%    fn change_key<E, F>(&mut self, key: &Self::Key, f: F) -> Result<(), ChangeKeyError<E>>
-%    where
-%        F: FnOnce(
-%            &Self::Key,
-%            &mut Self::Value,
-%            &dyn Fn(&Self::Key) -> bool,
-%        ) -> Result<Self::Key, E>;
-%
-%    fn force_change_key(&mut self, key: &Self::Key, new_key: Self::Key) -> bool;
-%    fn evict<F>(&mut self, f: F) -> Option<(Self::Key, Self::Value)>
-%    where
-%        F: FnMut(&Self::Key, &mut Self::Value, &dyn Fn(&Self::Key) -> bool) -> Option<usize>;
-%
-%    fn insert(&mut self, key: Self::Key, value: Self::Value, size: usize);
-%    fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = &'a Self::Key> + 'a>;
-%    fn size(&self) -> usize;
-%    fn capacity(&self) -> usize;
-%    fn stats(&self) -> Self::Stats;
-%    fn verify(&mut self);
-%}
-%\end{lstlisting}
 
 Next chapter we will show details on implementation of the actual cache and how the cache works with the different layers in haura.
 
+The cache is part of the DMU and thus part of the DML, as shown in \ref{fig:structure haura}.
+The task of the DML is to manage objects for the tree layer, which includes caching, tracking changes, and writing objects back.
+To uniquely identify objects each object has a handle, the \emph{ObjectKey}, which is an enumeration type that represents the state of the object at the last access, as shown in \ref{lst:ObjectKey enumeration}.
+The \emph{G} type in \ref{lst:ObjectKey enumeration} stands for generation and is used by the upper layer to keep track of the age of an object.
+
+\begin{lstlisting}[mathescape=true,caption=ObjectKey enumeration ,label=lst:ObjectKey enumeration]
+
+pub enum ObjectKey<G> {
+    Unmodified { offset: DiskOffset, generation: G },
+    Modified(ModifiedObjectId),
+    InWriteback(ModifiedObjectId),
+}
+\end{lstlisting}
+
+\todo[inline]{find out what the use of "generation: G" is}
+% \cite{wiedemann2018modern} generation is used by the upper layer to track age of an object try to verify this.
+
+Thus, an object in DML (and Cache) can only be in unmodified, modified or write-back state.
+
+
 \begin{figure}[ht]
 	\centering
-	\includegraphics[scale=0.4]{DML_state_cycle.pdf}
+	\includegraphics[scale=0.4]{DML_state_cycle.jpg}
 	\caption{DML state cycle, \cite{wiedemann2018modern}}
 		\label{fig:DML state cycle}
 \end{figure}
-
-As seen in figure \ref{fig:structure haura} cache is part of the data management layer.
-
-Cache is working closely with DMU.
-The DMU calls cache, triggers eviction, removal and so on.
--> insert DML object state cycle from wiedemann thesis
-
-
-
 
 
 
@@ -1161,3 +1125,52 @@ Magdeburg, \today
 \hspace*{0.25em}Signature
 
 \end{document}
+
+%-> can start with this chapter when I decide which benchmark and metrics I want to use\\
+%- fio for synthetic benchmarks -> zipf dis. and sequential should be covered\\
+%- try to find traces which I can use easily \\
+%- some articles uses SPEC-Benchmark traces\\
+%
+%- general problem that we are dealing with variable sized cache entries and also \\
+%  pinning an entry is possible which increases the difficulty of implementation of most suggested algorithms\\
+%- most algorithms based an equally sized pages/entries without pinning\\
+%- ml-clock with extra locking which could lead to problems, clock and clock-pro uses atomics to prevent this
+
+%\begin{lstlisting}[mathescape=true,caption=simplified Cache trait,label=lst:simplified Cache trait]
+%$\textcolor{ovgu-blue}{trait}$ Cache {
+%	$\textcolor{ovgu-blue}{fn}$ new(capacity: usize) -> $\textcolor{ovgu-blue}{Self}$
+%	
+%    type Key: Eq + Hash;
+%    type Value;
+%    type ValueRef: AddSize + StableDeref<Target = Self::Value>;
+%    type Stats: Stats;
+%
+%    fn new(capacity: usize) -> Self;
+%    fn contains_key(&self, key: &Self::Key) -> bool;
+%    fn get(&self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
+%    fn get_mut(&mut self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
+%    fn remove<F>(&mut self, key: &Self::Key, f: F) -> Result<Self::Value, RemoveError>
+%    where
+%        F: FnOnce(&mut Self::Value) -> usize;
+%    fn force_remove(&mut self, key: &Self::Key, size: usize) -> bool;
+%    fn change_key<E, F>(&mut self, key: &Self::Key, f: F) -> Result<(), ChangeKeyError<E>>
+%    where
+%        F: FnOnce(
+%            &Self::Key,
+%            &mut Self::Value,
+%            &dyn Fn(&Self::Key) -> bool,
+%        ) -> Result<Self::Key, E>;
+%
+%    fn force_change_key(&mut self, key: &Self::Key, new_key: Self::Key) -> bool;
+%    fn evict<F>(&mut self, f: F) -> Option<(Self::Key, Self::Value)>
+%    where
+%        F: FnMut(&Self::Key, &mut Self::Value, &dyn Fn(&Self::Key) -> bool) -> Option<usize>;
+%
+%    fn insert(&mut self, key: Self::Key, value: Self::Value, size: usize);
+%    fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = &'a Self::Key> + 'a>;
+%    fn size(&self) -> usize;
+%    fn capacity(&self) -> usize;
+%    fn stats(&self) -> Self::Stats;
+%    fn verify(&mut self);
+%}
+%\end{lstlisting}
