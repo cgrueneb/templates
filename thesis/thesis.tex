@@ -95,7 +95,7 @@ Author\\
 
 \publishers{
 First Reviewer:\\
-Jun.-Prof. Dr. Michael Kuhn
+Prof. Dr. Michael Kuhn
 
 \medskip
 
@@ -105,7 +105,7 @@ Johannes Wünsche
 \medskip
 
 Supervisor:\\
-Jun.-Prof. Dr. Michael Kuhn
+Johannes Wünsche
 }
 
 \begin{document}
@@ -143,21 +143,38 @@ Jun.-Prof. Dr. Michael Kuhn
 % es wird auch kurz dargestellt wie vorgeganngen wurde
 % der Aufbau der Arbeit wird kurz vorgestellt
 
+% 5%-19% 2-4
+
 % possible structure
-\section{Overview}
+\section{Memory Hierarchy}
+Since the invention of integrated circuits in 1959, CPU performance has grown faster than main memory performance.
+Figure \ref{fig:processor memory gap} shows the improvement in processor performance and DRAM performance since the 1980s.
+This leads to the "processor-memory performance gap", also known as the "memory wall" problem \cite{wulf1995hitting}.
+One of the reasons for this is that in the semiconductor industry, CPU and memory are separate domains and have been optimized for different goals.
+CPUs have been optimized for higher clock frequency, whereas DRAM and hard disks have been optimized primarily for higher memory capacity \cite{cpu-mem-gap}.
+Even though the rates of increase in single-core performance have slowed down and thus the performance gap between processor and memory is growing more slowly, the use of multi-core processors has increased the bandwidth requirements so that the main memory must support more memory accesses.
 
-%- general problem for cache replacement\\
-%- primary and secondary storage \\
-%- memory hierachy\\
-%- change due to new trends like cloud storage and increasing cache size\\
-%- using of haura storage layer with different cache implementations clock, clock-pro and ml-clock\\
-%- tiered storage stack\\
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.45]{processor_memory_gap.pdf}
+	\caption{Processor-Memory gap, figure from \cite{cpu-mem-gap}}
+		\label{fig:processor memory gap}
+\end{figure}
 
 
-% in ARC-paper an enumeration of use cases for caches
-% could describe why clock-based algorithm and not list based were considered.
+To reduce the processor-memory performance gap, memory is built up hierarchically, as shown in figure \ref{fig:memory hierarchy}.
+The memory is ordered from fast, expensive and low capacity, which is close to the processor, to progressively slower, cheaper and higher capacity, which is further away from the processor.
+The goal of the memory hierarchy is to develop systems that have enough fast memory, CPU cache and DRAM to not slow down the CPU significantly and on the other hand, have as much memory capacity as necessary provided by using hard disks, solid state disk or flash memory without excessive costs.
 
-\todo[inline]{need to rewrite, most of it moved to Background}
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.6]{ComputerMemoryHierarchy.pdf}
+	\caption{Memory Hierarchy}
+		\label{fig:memory hierarchy}
+\end{figure}
+\todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
+
+
 
 \section{Contribution}
 % check if contribution or contributions is right
@@ -270,36 +287,6 @@ The user can decide how the used hardware falls into these tiers. Also, not all 
 
 The last layer, the \emph{Vdev Layer}, is responsible for actually reading and writing data from the disks.
 Single disk, multiple disks or RAID-like configurations can be used.
-
-\section{Memory Hierarchy}
-Since the invention of integrated circuits in 1959, CPU performance has grown faster than main memory performance.
-Figure \ref{fig:processor memory gap} shows the improvement in processor performance and DRAM performance since the 1980s.
-This leads to the "processor-memory performance gap", also known as the "memory wall" problem \cite{wulf1995hitting}.
-One of the reasons for this is that in the semiconductor industry, CPU and memory are separate domains and have been optimized for different goals.
-CPUs have been optimized for higher clock frequency, whereas DRAM and hard disks have been optimized primarily for higher memory capacity \cite{cpu-mem-gap}.
-Even though the rates of increase in single-core performance have slowed down and thus the performance gap between processor and memory is growing more slowly, the use of multi-core processors has increased the bandwidth requirements so that the main memory must support more memory accesses.
-
-\begin{figure}[ht]
-	\centering
-	\includegraphics[scale=0.5]{processor_memory_gap.pdf}
-	\caption{Processor-Memory gap, figure from \cite{cpu-mem-gap}}
-		\label{fig:processor memory gap}
-\end{figure}
-
-To reduce the processor-memory performance gap, memory is built up hierarchically, as shown in figure \ref{fig:memory hierarchy}.
-The memory is ordered from fast, expensive and low capacity, which is close to the processor, to progressively slower, cheaper and higher capacity, which is further away from the processor.
-The goal of the memory hierarchy is to develop systems that have enough fast memory, CPU cache and DRAM to not slow down the CPU significantly and on the other hand, have as much memory capacity as necessary provided by using hard disks, solid state disk or flash memory without excessive costs.
-
-\newpage
-
-\begin{figure}[ht]
-	\centering
-	\includegraphics[scale=0.6]{ComputerMemoryHierarchy.pdf}
-	\caption{Memory Hierarchy}
-		\label{fig:memory hierarchy}
-\end{figure}
-\todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
-
 
 \section{Caching}
 %Due to the use of a memory hierarchy, caching is used in several places, as shown in table \ref{tab:caching hierarchy} and can either be handle in hardware like the L1 and L2 cache of a cpu-core, in software like a web cache or a combination of both.
@@ -521,17 +508,182 @@ Another example is Learning-based Page Replacement (LPR) by \cite{kim2022lpr} wh
 uses LRU and MRU and learn the weighting factor between the two policies through online through reinforcement learning.
 ML-clock also falls into this category.
 
-\section{Implemented Cache Replacement Policies}
+\chapter{Related Work}
+\label{cha:related work}
+% es werden Arbeiten presentiert bzw. meine Arbeit mit diesen vergliechen
+% was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
+% 5-10%, ca 2-5 Seiten
 
-% better phrasing necessary
-In the next chapter, we present the cache replacement policies implemented in haura.
+\section*{It's Time to Revisit LRU vs FIFO by \cite{eytan2020s}}
 
-\subsection{CLOCK}
-%- history of clock \\
-%- low overhead like FIFO but an LRU aproximation -> citation from "Multics paging experiment..."\\
-%- widely used \\
-%- already implemented \\
-%- used as baseline \\
+Earlier studies between LRU and FIFO performance are probably not sufficient for newer use cases such as web cache, ML ...
+Because the workloads and the sizes of caches changed dramatically over time.
+The general guide line LRU is better then FIFO isn't true in all cases.
+When the cache is to big to hold it completely in main memory FIFO is better because only the end where the eviction happens and the start of the FIFO queue need to be in main memory. So the simpler structure is more suitable in this case than LRU.
+LRU still better choice when the latency of memory is the dominating factor.
+
+\section*{FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion by \cite{yang2023fifo}}
+
+Although FIFO is a simple to implement cache replacement algorithm with O(1) complexity for insertion and removal and therefore provides good throughput.
+The major drawback was the lower hit rate compared to LRU-based algorithms.
+The paper by \cite{van1992lru} proofed that LRU is better under the assumption of an independent reference model.
+But this paper \cite{yang2023fifo} shows that FIFO can achieve comparable performance to modern LRU based cache replacement algorithms.
+This study uses very large data sets/traces from different use cases.
+The key to achieve this is the use of Quick Demotion and Lazy Promotion.
+Quick Demotion is based from the observation that often recently insert entries also leave the cache quickly. So these new entries are insert in a smaller FIFO queue, 10\% of cache and also a ghost queue for evicted entries is used which only saves metadata not the actual entries. So if a new entries leaves the QD-queue it will be insert to ghost queue. If then an access to the same entry happens where the entry is in ghost the entry will be insert to main cache.
+Quick Demotion can be combined with different cache replacement algorithms not just FIFO.
+To some extend some cache replacement algorithms have some kind of  Quick demotion incorporated. 
+Lazy Promotion tries to maintain hot entries in cache with minimal overhead.
+To achieve this Promotion only happens at eviction not at access like LRU which decrease the handling of metadata. Example for this would be 2-bit Clock algorithm.
+This approach could be easy implemented by adding Quick Demotion and use 2-bit Clock as main cache.
+Different implementations for QD and LP possible can lead to many different modular algorithms. 
+
+\section*{FrozenHot Cache: Rethinking Cache Management for Modern Hardware by \cite{qiu2023frozenhot}}
+
+This is a new cache replacement algorithms based on list.
+The cache is divided in a frozen cache and a dynamic cache.
+The frozen cache(FC) is for hot entries and if fixed to reduce latency by removing eviction and locking for those entries. 
+The Dynamic cache(DC) on the other hand is used to achieve adaptability.
+Rebuilding of the frozen cache happens periodically.
+It is possible to combine this approach with different list based caches with minimal effort.
+So this is a cache better suited for multi-threading.
+
+\section*{TinyLFU: A highly efficient cache admission policy by \cite{einziger2017tinylfu}}
+
+This is a LFU based cacehe replacement algorithm which uses a Bloom-Filter to approximate the frequency information for the cache entries with a relatively small memory usage.
+So even for large caches which can't be entirely in RAM the Bloom-Filter is small enough to fit in to RAM.
+It is based on the assumption of a skewed accesses distribution like zipfian.
+Also a small window, a FIFO queue is used to bring requested entries into the cache and then
+with the help of the frequency statistic in Bloom-filter the algorithm decide if it is better to bring the entry to the main cache or not. Main cache could be different caching algorithm.
+So TinyLFU has something like a Quick Demotion which means rarely used entries leave the cache quickly or are not transferred to the main cache at all.
+TinyLFU is intended for relatively large caches probably doesn't work as well on small caches ot the extra cost for bloom-filter are not justified.
+
+%clock-pro+ could also be a candidate for related work
+
+\chapter{Design and Implementation}
+\label{cha:design and implementation}
+% Design and Implementation fehlen?! als Kapitel
+% 25-35%, ca 10-14 Seiten
+
+% see if I want to mention copy-on-write in background haura or somewhere else
+
+Next chapter we will show details on implementation of the actual cache and how the cache works with the different layers in haura.
+
+The cache is part of the DMU and thus part of the DML, as shown in \ref{fig:structure haura}.
+The task of the DML is to manage objects for the tree layer, which includes caching, tracking changes, and writing objects back.
+All unmodified and all on-disk DML objects are identified by an \emph{ObjectPointer}.
+
+
+\begin{lstlisting}[mathescape=true,caption=ObjectPointer struct ,label=lst:ObjectPointer struct]
+pub struct ObjectPointer<D> {
+    pub(super) decompression_tag: DecompressionTag,
+    pub(super) checksum: D,
+    pub(super) offset: DiskOffset,
+    pub(super) size: Block<u32>,
+    pub(super) info: DatasetId,
+    pub(super) generation: Generation,
+}
+\end{lstlisting}
+% pub(super) makes an item visible to the parent module. This is equivalent to pub(in super).
+
+The struct fields \texttt{offset}, \texttt{size}, \texttt{checksum} and \texttt{decompression\_tag}, in listing \ref{lst:ObjectPointer struct}, are used to read an object from disk and decompress it.
+The \texttt{info} field can be used to store additional tags for an object.
+And the last field \texttt{generation} is used to track the age of an object.
+
+The DML objects can be called by their unique \emph{ObjRef}.
+This reference, shown in \ref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
+Thus, four states are possible unmodified, modified, in write back or incomplete.
+If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
+when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
+The incomplete state can only be reached when an object is deserialized from disk.
+If the DMU encounter an incomplete object during runtime, haura panics and crashes.
+
+\begin{lstlisting}[mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
+	label=lst:ObjRef enumeration]
+pub enum ObjRef<P> {
+    Incomplete(P),
+    Unmodified(P, PivotKey),
+    Modified(ModifiedObjectId, PivotKey),
+    InWriteback(ModifiedObjectId, PivotKey),
+}
+\end{lstlisting}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.4]{DML_state_cycle.jpg}
+	\caption{DML state cycle, \cite{wiedemann2018modern}}
+		\label{fig:DML state cycle}
+\end{figure}
+% \cite{wiedemann2018modern} generation is used by the upper layer to track age of an object try to verify this.
+
+
+The DMU manages the cache and the states of each \emph{ObjRef} as shown in \ref{fig:DML state cycle}.
+The cycle starts with the creation of an object in modified state. When the DMU starts the write back of the object, the state
+is changed to in write back state.
+If the object is modified during write back through the steal function, it change the state back to modified.
+When the write back is finished the object state change to unmodified.
+An unmodified object can either change the state to modified if the object has been modified or evicted from cache to disk.
+And lastly, any object on disk can be fetched in cache and will be in unmodified state.
+
+For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown in \ref{lst:ObjectKey enumeration}.
+These \emph{ObjectKey} are  from the \emph{ObjRef} for each cache entry.
+Objects in incomplete state are not stored in cache.
+
+\begin{lstlisting}[mathescape=true,caption=ObjectKey enumeration,label=lst:ObjectKey enumeration]
+pub enum ObjectKey<G> {
+    Unmodified { offset: DiskOffset, generation: G },
+    Modified(ModifiedObjectId),
+    InWriteback(ModifiedObjectId),
+}
+\end{lstlisting}
+
+The DML state cycle and the management of the cache by the DMU create additonal requirements for the cache.
+Firstly, if only unmodified cache entries can be evicted, but the cache also contains cache entries which are in write back and modified state, there are cache entries which the DMU can not evict.
+These entries are pinned and the evict function of the cache must take this into account.
+This is a significant difference to all covered cache replacement policies described in \ref{cha:background}, which assume that all cache entries can always be evicted. Furthermore, eviction is usually performed by the cache itself and not triggered externally, as the DMU does in our case.
+
+Secondly, if a state of a cache entry can change, according to the DML state cycle \ref{fig:DML state cycle}, the cache must provide a function to change the \emph{ObjectKey} of an entry.
+
+Third, the cache must be able to handle cache entries of any size.
+The handling of arbitrarily sized cache entries is managed by the DMU.
+Each fetched entry is always inserted into the cache and then the eviction function is called until the cache capacity is again below the specified cache size.
+So the cache size is a soft limit that can be exceeded temporarily, not a hard limit, which would mean that the eviction function
+is called before inserting so that the cache size is never exceeded.
+
+% continue here, could show the cache trait to show the function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+To implement different cache policies we need to modify src/database/mod.rs.
+Because there the DMU will be created.
+Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
+
+
+
+
+
+
+
+
+\section{CLOCK}
 
 Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for the Multics operating system.
 It is an approximation of the LRU (Least Recently Used) policy, but with a low runtime overhead, comparable to FIFO.
@@ -588,7 +740,8 @@ Due to its simplicity and good performance in most cases, the clock algorithm is
 
  \todo[inline]{search for software which use clock as example with source}
 
-\subsection{K-CLOCK}
+
+\section{K-CLOCK}
 
 Similar to normal clock algorithms but used a counter instead of just a bit for entry accesses.
 The variable k can be chosen usually k=2 gives best performance.
@@ -631,14 +784,7 @@ $\textcolor{ovgu-blue}{end \ if}$
 return entry 
 \end{lstlisting}
 
-\subsection{CLOCK-PRO}
-%- improvement of clock algorithm \\
-%- should work better in cases clock has poor performance \\
-%- scanning or looping over data\\
-%- based on LIRS but adoptable not fixed Threshold\\
-%- uses reuse distance as metric \\
-%- categorizes entries in hot and cold\\
-%- also tracks non-resident entry to make better decisions about \\
+\section{CLOCK-PRO}
 
 Although the clock algorithm performs well in a variety of use cases, problems arise with weakly localized access patterns, as described in \cite{jiang2005making}.
 Some problems include:
@@ -770,7 +916,12 @@ This will also adjust the speed  for cold- and hot-hand.
 
 So clock-pro has the advantage of LRU in case of strong locality and better performance like LIRS in case of weak locality.
 
-\subsection{ML-CLOCK}
+
+- problems with recursion
+- show evict method 
+- try to make evict method more understandable
+
+\section{ML-CLOCK}
 %- newest algorithm of this three\\
 %- based on single layer perceptron and online learning \\
 %- also uses clock approach for efficient access compared to list based\\
@@ -901,195 +1052,9 @@ return entry
 	\label{tab:ml-clock preference rules}
 \end{table}
 
-\chapter{Design and Implementation}
-\label{cha:design and implementation}
-% Design and Implementation fehlen?! als Kapitel
-% 25-35%, ca 10-14 Seiten
-
-% see if I want to mention copy-on-write in background haura or somewhere else
-
-Next chapter we will show details on implementation of the actual cache and how the cache works with the different layers in haura.
-
-The cache is part of the DMU and thus part of the DML, as shown in \ref{fig:structure haura}.
-The task of the DML is to manage objects for the tree layer, which includes caching, tracking changes, and writing objects back.
-All unmodified and all on-disk DML objects are identified by an \emph{ObjectPointer}.
-
-
-\begin{lstlisting}[mathescape=true,caption=ObjectPointer struct ,label=lst:ObjectPointer struct]
-pub struct ObjectPointer<D> {
-    pub(super) decompression_tag: DecompressionTag,
-    pub(super) checksum: D,
-    pub(super) offset: DiskOffset,
-    pub(super) size: Block<u32>,
-    pub(super) info: DatasetId,
-    pub(super) generation: Generation,
-}
-\end{lstlisting}
-% pub(super) makes an item visible to the parent module. This is equivalent to pub(in super).
-
-The struct fields \texttt{offset}, \texttt{size}, \texttt{checksum} and \texttt{decompression\_tag}, in listing \ref{lst:ObjectPointer struct}, are used to read an object from disk and decompress it.
-The \texttt{info} field can be used to store additional tags for an object.
-And the last field \texttt{generation} is used to track the age of an object.
-
-The DML objects can be called by their unique \emph{ObjRef}.
-This reference, shown in \ref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
-Thus, four states are possible unmodified, modified, in write back or incomplete.
-If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
-when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
-The incomplete state can only be reached when an object is deserialized from disk.
-If the DMU encounter an incomplete object during runtime, haura panics and crashes.
-
-\begin{lstlisting}[mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
-	label=lst:ObjRef enumeration]
-pub enum ObjRef<P> {
-    Incomplete(P),
-    Unmodified(P, PivotKey),
-    Modified(ModifiedObjectId, PivotKey),
-    InWriteback(ModifiedObjectId, PivotKey),
-}
-\end{lstlisting}
-
-\begin{figure}[ht]
-	\centering
-	\includegraphics[scale=0.4]{DML_state_cycle.jpg}
-	\caption{DML state cycle, \cite{wiedemann2018modern}}
-		\label{fig:DML state cycle}
-\end{figure}
-% \cite{wiedemann2018modern} generation is used by the upper layer to track age of an object try to verify this.
-
-
-The DMU manages the cache and the states of each \emph{ObjRef} as shown in \ref{fig:DML state cycle}.
-The cycle starts with the creation of an object in modified state. When the DMU starts the write back of the object, the state
-is changed to in write back state.
-If the object is modified during write back through the steal function, it change the state back to modified.
-When the write back is finished the object state change to unmodified.
-An unmodified object can either change the state to modified if the object has been modified or evicted from cache to disk.
-And lastly, any object on disk can be fetched in cache and will be in unmodified state.
-
-For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown in \ref{lst:ObjectKey enumeration}.
-These \emph{ObjectKey} are  from the \emph{ObjRef} for each cache entry.
-Objects in incomplete state are not stored in cache.
-
-\begin{lstlisting}[mathescape=true,caption=ObjectKey enumeration,label=lst:ObjectKey enumeration]
-pub enum ObjectKey<G> {
-    Unmodified { offset: DiskOffset, generation: G },
-    Modified(ModifiedObjectId),
-    InWriteback(ModifiedObjectId),
-}
-\end{lstlisting}
-
-The DML state cycle and the management of the cache by the DMU create additonal requirements for the cache.
-Firstly, if only unmodified cache entries can be evicted, but the cache also contains cache entries which are in write back and modified state, there are cache entries which the DMU can not evict.
-These entries are pinned and the evict function of the cache must take this into account.
-This is a significant difference to all covered cache replacement policies described in \ref{cha:background}, which assume that all cache entries can always be evicted. Furthermore, eviction is usually performed by the cache itself and not triggered externally, as the DMU does in our case.
-
-Secondly, if a state of a cache entry can change, according to the DML state cycle \ref{fig:DML state cycle}, the cache must provide a function to change the \emph{ObjectKey} of an entry.
-
-Third, the cache must be able to handle cache entries of any size.
-The handling of arbitrarily sized cache entries is managed by the DMU.
-Each fetched entry is always inserted into the cache and then the eviction function is called until the cache capacity is again below the specified cache size.
-So the cache size is a soft limit that can be exceeded temporarily, not a hard limit, which would mean that the eviction function
-is called before inserting so that the cache size is never exceeded.
-
-% continue here, could show the cache trait to show the function
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-To implement different cache need to modify src/database/mod.rs.
-Because there the DMU will be created.
-Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
-
-
-
-
-
-
-
-
-\section{CLOCK and K-CLOCK}
-
-- put together as they are very similar
-
-\section{CLOCK-PRO}
-
-- problems with recursion
-- show evict method 
-- try to make evict method more understandable
-
-\section{ML-CLOCK}
 
 - two separated clocks one for clean entries one for dirty and also order by block address 
 - lock needed for get function because entry can change clock
-
-\chapter{Related Work}
-\label{cha:related work}
-% es werden Arbeiten presentiert bzw. meine Arbeit mit diesen vergliechen
-% was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
-% 5-10%, ca 2-5 Seiten
-
-\section*{It's Time to Revisit LRU vs FIFO by \cite{eytan2020s}}
-
-Earlier studies between LRU and FIFO performance are probably not sufficient for newer use cases such as web cache, ML ...
-Because the workloads and the sizes of caches changed dramatically over time.
-The general guide line LRU is better then FIFO isn't true in all cases.
-When the cache is to big to hold it completely in main memory FIFO is better because only the end where the eviction happens and the start of the FIFO queue need to be in main memory. So the simpler structure is more suitable in this case than LRU.
-LRU still better choice when the latency of memory is the dominating factor.
-
-\section*{FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion by \cite{yang2023fifo}}
-
-Although FIFO is a simple to implement cache replacement algorithm with O(1) complexity for insertion and removal and therefore provides good throughput.
-The major drawback was the lower hit rate compared to LRU-based algorithms.
-The paper by \cite{van1992lru} proofed that LRU is better under the assumption of an independent reference model.
-But this paper \cite{yang2023fifo} shows that FIFO can achieve comparable performance to modern LRU based cache replacement algorithms.
-This study uses very large data sets/traces from different use cases.
-The key to achieve this is the use of Quick Demotion and Lazy Promotion.
-Quick Demotion is based from the observation that often recently insert entries also leave the cache quickly. So these new entries are insert in a smaller FIFO queue, 10\% of cache and also a ghost queue for evicted entries is used which only saves metadata not the actual entries. So if a new entries leaves the QD-queue it will be insert to ghost queue. If then an access to the same entry happens where the entry is in ghost the entry will be insert to main cache.
-Quick Demotion can be combined with different cache replacement algorithms not just FIFO.
-To some extend some cache replacement algorithms have some kind of  Quick demotion incorporated. 
-Lazy Promotion tries to maintain hot entries in cache with minimal overhead.
-To achieve this Promotion only happens at eviction not at access like LRU which decrease the handling of metadata. Example for this would be 2-bit Clock algorithm.
-This approach could be easy implemented by adding Quick Demotion and use 2-bit Clock as main cache.
-Different implementations for QD and LP possible can lead to many different modular algorithms. 
-
-\section*{FrozenHot Cache: Rethinking Cache Management for Modern Hardware by \cite{qiu2023frozenhot}}
-
-This is a new cache replacement algorithms based on list.
-The cache is divided in a frozen cache and a dynamic cache.
-The frozen cache(FC) is for hot entries and if fixed to reduce latency by removing eviction and locking for those entries. 
-The Dynamic cache(DC) on the other hand is used to achieve adaptability.
-Rebuilding of the frozen cache happens periodically.
-It is possible to combine this approach with different list based caches with minimal effort.
-So this is a cache better suited for multi-threading.
-
-\section*{TinyLFU: A highly efficient cache admission policy by \cite{einziger2017tinylfu}}
-
-This is a LFU based cacehe replacement algorithm which uses a Bloom-Filter to approximate the frequency information for the cache entries with a relatively small memory usage.
-So even for large caches which can't be entirely in RAM the Bloom-Filter is small enough to fit in to RAM.
-It is based on the assumption of a skewed accesses distribution like zipfian.
-Also a small window, a FIFO queue is used to bring requested entries into the cache and then
-with the help of the frequency statistic in Bloom-filter the algorithm decide if it is better to bring the entry to the main cache or not. Main cache could be different caching algorithm.
-So TinyLFU has something like a Quick Demotion which means rarely used entries leave the cache quickly or are not transferred to the main cache at all.
-TinyLFU is intended for relatively large caches probably doesn't work as well on small caches ot the extra cost for bloom-filter are not justified.
-
-%clock-pro+ could also be a candidate for related work
 
 \chapter{Evaluation}
 \label{cha:evaluation}
@@ -1124,9 +1089,13 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 
 - problems with results, capacity management doesn't work in all cases
 
+\section{Summary}
+
 \chapter{Conclusion}
 \label{cha:conclusion}
 % could be conclusions and future work
+
+\section{Future Work}
 
 -> after evaluation
 
@@ -1143,19 +1112,17 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 
 \appendix
 
-\chapter{Appendix}
-\label{cha:appendix}
+%\chapter{Appendix}
+%\label{cha:appendix}
 
 % could also be ad the beginning
 % implement acronyms or list of Abbreviations
 
-\setcounter{tocdepth}{1}
-\listoffigures
-
-\setcounter{tocdepth}{1}
-\listoftables
-
-\lstlistoflistings
+%\setcounter{tocdepth}{1}
+%\listoffigures
+%\setcounter{tocdepth}{1}
+%\listoftables
+%\lstlistoflistings
 
 \chapter*{}
 
