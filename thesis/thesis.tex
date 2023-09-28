@@ -24,6 +24,10 @@
 \usepackage{graphicx}
 \usepackage[htt]{hyphenat}
 \usepackage{listings}
+% insert for rust syntax highlighting for listings
+\usepackage{listings-rust}
+\lstset{language=Rust}
+% ---------
 \usepackage{microtype}
 \usepackage{subcaption}
 % Required for listings's upquote
@@ -221,7 +225,7 @@ Only when the root node's buffer is full, a batch of messages is flushed down th
 If a node needs to be split, the buffer is also split between the new nodes.
 When the insert message arrives at a leaf node, the data is added to the leaf.
 
-This behavior leads to better insertion performance then B-trees, since insertion always occurs at the root, no searching for the correct insertion point is required, and  
+This behavior leads to better insertion performance than B-trees, since insertion always occurs at the root, no searching for the correct insertion point is required, and  
 the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
 On deletion a "tombstone message" will be insert into the tree and will be flushed down the tree to a leaf, like an insertion message.
 
@@ -451,7 +455,7 @@ There two main strategies used to make LFU more adoptable for this case.
 The first is aging, which means that the access counter for each entry is decreased after  a certain amount of time.
 And the second strategy is to use only a fixed time window to count accesses and after the window restart each access counter \cite{karakostas2000practical}.
 
-\section{Improved cache Replacement Policies}
+\section{Improved Cache Replacement Policies}
 LRU is simple, uses very limited information and works good in cases of strong locality.
 Also LRU is the most used or the most policies are based on LRU.
 But the downside is scan and loop cases in which LFU performs better.
@@ -508,6 +512,10 @@ Another example is Learning-based Page Replacement (LPR) by \cite{kim2022lpr} wh
 uses LRU and MRU and learn the weighting factor between the two policies through online through reinforcement learning.
 ML-clock also falls into this category.
 
+\section{Summary}
+
+
+
 \chapter{Related Work}
 \label{cha:related work}
 % es werden Arbeiten presentiert bzw. meine Arbeit mit diesen vergliechen
@@ -560,6 +568,8 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 
 %clock-pro+ could also be a candidate for related work
 
+\section*{Summary}
+
 \chapter{Design and Implementation}
 \label{cha:design and implementation}
 % Design and Implementation fehlen?! als Kapitel
@@ -567,14 +577,22 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 
 % see if I want to mention copy-on-write in background haura or somewhere else
 
-Next chapter we will show details on implementation of the actual cache and how the cache works with the different layers in haura.
+-> need no chapter introduction
 
-The cache is part of the DMU and thus part of the DML, as shown in \ref{fig:structure haura}.
-The task of the DML is to manage objects for the tree layer, which includes caching, tracking changes, and writing objects back.
+
+\section{DML State Cycle}
+
+The task of the DML is to manage objects for the tree layer. This includes reading objects from the disk, storing them in the main memory, tracking changes and writing them back.
+This is done by a single DMU which is shared between all trees of the upper layer.
+Thus, the DMU is also responsible for the management of the cache.
+
+To accomplish all this, objects must be uniquely identifiable.
 All unmodified and all on-disk DML objects are identified by an \emph{ObjectPointer}.
 
+\bigskip
+\todo[inline]{syntax highlighting in not correct for all listings}
 
-\begin{lstlisting}[mathescape=true,caption=ObjectPointer struct ,label=lst:ObjectPointer struct]
+\begin{lstlisting}[language=Rust,mathescape=true,caption=ObjectPointer struct ,label=lst:ObjectPointer struct]
 pub struct ObjectPointer<D> {
     pub(super) decompression_tag: DecompressionTag,
     pub(super) checksum: D,
@@ -598,7 +616,9 @@ when the object is either modified or in write back, objects are given a unique 
 The incomplete state can only be reached when an object is deserialized from disk.
 If the DMU encounter an incomplete object during runtime, haura panics and crashes.
 
-\begin{lstlisting}[mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
+\newpage
+
+\begin{lstlisting}[language=Rust,mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
 	label=lst:ObjRef enumeration]
 pub enum ObjRef<P> {
     Incomplete(P),
@@ -614,8 +634,6 @@ pub enum ObjRef<P> {
 	\caption{DML state cycle, \cite{wiedemann2018modern}}
 		\label{fig:DML state cycle}
 \end{figure}
-% \cite{wiedemann2018modern} generation is used by the upper layer to track age of an object try to verify this.
-
 
 The DMU manages the cache and the states of each \emph{ObjRef} as shown in \ref{fig:DML state cycle}.
 The cycle starts with the creation of an object in modified state. When the DMU starts the write back of the object, the state
@@ -629,7 +647,9 @@ For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown
 These \emph{ObjectKey} are  from the \emph{ObjRef} for each cache entry.
 Objects in incomplete state are not stored in cache.
 
-\begin{lstlisting}[mathescape=true,caption=ObjectKey enumeration,label=lst:ObjectKey enumeration]
+\bigskip
+
+\begin{lstlisting}[language=Rust,mathescape=true,caption=ObjectKey enumeration,label=lst:ObjectKey enumeration]
 pub enum ObjectKey<G> {
     Unmodified { offset: DiskOffset, generation: G },
     Modified(ModifiedObjectId),
@@ -637,53 +657,60 @@ pub enum ObjectKey<G> {
 }
 \end{lstlisting}
 
-The DML state cycle and the management of the cache by the DMU create additonal requirements for the cache.
-Firstly, if only unmodified cache entries can be evicted, but the cache also contains cache entries which are in write back and modified state, there are cache entries which the DMU can not evict.
-These entries are pinned and the evict function of the cache must take this into account.
-This is a significant difference to all covered cache replacement policies described in \ref{cha:background}, which assume that all cache entries can always be evicted. Furthermore, eviction is usually performed by the cache itself and not triggered externally, as the DMU does in our case.
+\bigskip
 
-Secondly, if a state of a cache entry can change, according to the DML state cycle \ref{fig:DML state cycle}, the cache must provide a function to change the \emph{ObjectKey} of an entry.
+\section{Cache Trait}
 
-Third, the cache must be able to handle cache entries of any size.
-The handling of arbitrarily sized cache entries is managed by the DMU.
-Each fetched entry is always inserted into the cache and then the eviction function is called until the cache capacity is again below the specified cache size.
-So the cache size is a soft limit that can be exceeded temporarily, not a hard limit, which would mean that the eviction function
+The DML state cycle and the fact that the cache is managed by the DMU place additional demands on the cache.
+We see this in the cache trait, listing \ref{lst:simplified Cache trait}.
+
+The first difference is that we have an explicit evict function. In most cache implementations, evict is a private function that the cache itself calls.
+In our case, however, the DMU must call the evict function, not the cache itself.
+Furthermore, the evict function must take into account that there are cache entries that 
+are pinned i.e. in write back or modified state and therefore cannot be removed from the cache.
+Also, the DMU can remove specific cache entries, listing  \ref{lst:simplified Cache trait} line 6 and line 7.
+The \texttt{remove}()-function for unmodified entries and \texttt{force\_remove}() for pinned entries.
+
+\bigskip
+
+\begin{lstlisting}[language=Rust,mathescape=true,caption={simplified Cache trait without type aliases, generics, function parameters and function return types},label=lst:simplified Cache trait]
+trait Cache {
+    fn new();
+    fn contains_key();
+    fn get();
+    fn get_mut();
+    fn remove();
+    fn force_remove();
+    fn change_key();
+    fn force_change_key();
+    fn evict();
+    fn insert();
+    fn iter();
+    fn $\textcolor{black}{\texttt{size}}$();
+    fn capacity();
+    fn stats();
+    fn verify();
+}
+\end{lstlisting}
+
+The second difference is that it must be possible to change the key for cache entries.
+Because an object in cache can change his state 
+Therefor we have two functions, listing \ref{lst:simplified Cache trait} line 8 and line 9. 
+Again two functions for unmodified and pinned entries.
+
+Another difference is that the cache must be able to handle cache entries of any size.
+The handling of cache entries of arbitrary size is managed by the DMU.
+Each fetched entry is always inserted into the cache, and then the eviction function is invoked until the cache capacity is again below the specified cache size.
+So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the eviction function is called
 is called before inserting so that the cache size is never exceeded.
 
-% continue here, could show the cache trait to show the function
+Furthermore, we have added the \texttt{get\_mut}()-function, \ref{lst:simplified Cache trait} line 5, 
+since the \texttt{get}()-function does not allow that the state of the cache changes.
+But this is needed for the implementation of ML-CLOCK, which we will discuss in more detail in section \ref{sub:ml-clock}.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-To implement different cache policies we need to modify src/database/mod.rs.
-Because there the DMU will be created.
-Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
-
-
-
-
-
-
-
-
-\section{CLOCK}
+\section{Implemented Cache Replacement Policies}
+\label{sec:implemented cache replacement policies}
+\subsection{CLOCK}
 
 Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for the Multics operating system.
 It is an approximation of the LRU (Least Recently Used) policy, but with a low runtime overhead, comparable to FIFO.
@@ -703,17 +730,17 @@ $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
 
-if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{\texttt{then}}$
 	// cache hit
-	if entry.referenceBit == false $\textcolor{ovgu-blue}{then}$
+	if entry.referenceBit == false $\textcolor{ovgu-blue}{\texttt{then}}$
 		entry.referenceBit = true
-	$\textcolor{ovgu-blue}{end \ if}$
+	$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 else
 	// cache miss
-	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{\texttt{then}}$
 		// evict one entry
 		while Clk.isFull() == true
-			if Clk.hand.referenceBit == true $\textcolor{ovgu-blue}{then}$
+			if Clk.hand.referenceBit == true $\textcolor{ovgu-blue}{\texttt{then}}$
 				// second chance if reference bit was set
 				Clk.hand.referenceBit = false
 				Clk.hand = Clk.hand.next
@@ -722,12 +749,12 @@ else
 				evict-candi = Clk.hand
 				Clk.hand = Clk.hand.next
 				Clk.evict(evict-candi)
-			$\textcolor{ovgu-blue}{end \ if}$
-		$\textcolor{ovgu-blue}{end \ while}$
-	$\textcolor{ovgu-blue}{end \ if}$
+			$\textcolor{ovgu-blue}{\texttt{end \ if}}$
+		$\textcolor{ovgu-blue}{\texttt{end \ while}}$
+	$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 	// insert entry to clock
 	Clk.insert(entry)
-$\textcolor{ovgu-blue}{end \ if}$	
+$\textcolor{ovgu-blue}{\texttt{end \ if}}$	
 return entry 
 \end{lstlisting}
 
@@ -741,7 +768,7 @@ Due to its simplicity and good performance in most cases, the clock algorithm is
  \todo[inline]{search for software which use clock as example with source}
 
 
-\section{K-CLOCK}
+\subsection{K-CLOCK}
 
 Similar to normal clock algorithms but used a counter instead of just a bit for entry accesses.
 The variable k can be chosen usually k=2 gives best performance.
@@ -756,17 +783,17 @@ $\textcolor{ovgu-blue}{Input}$
 	entry: entry on I/O request
 	K: Number of max references stored per entry
 
-if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{\texttt{then}}$
 	// cache hit
-	if entry.referenceCount < K $\textcolor{ovgu-blue}{then}$
+	if entry.referenceCount < K $\textcolor{ovgu-blue}{\texttt{then}}$
 		entry.referenceCount += 1
-	$\textcolor{ovgu-blue}{end \ if}$
+	$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 else
 	// cache miss
-	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{\texttt{then}}$
 		// evict one entry
 		while Clk.isFull() == true
-			if Clk.hand.referenceCount > 1 $\textcolor{ovgu-blue}{then}$
+			if Clk.hand.referenceCount > 1 $\textcolor{ovgu-blue}{\texttt{then}}$
 				// decrease reference count 
 				Clk.hand.referenceCount -= 1
 				Clk.hand = Clk.hand.next
@@ -775,16 +802,16 @@ else
 				evict-candi = Clk.hand
 				Clk.hand = Clk.hand.next
 				Clk.evict(evict-candi}
-			$\textcolor{ovgu-blue}{end \ if}$
-		$\textcolor{ovgu-blue}{end \ while}$
-	$\textcolor{ovgu-blue}{end \ if}$
+			$\textcolor{ovgu-blue}{\texttt{end \ if}}$
+		$\textcolor{ovgu-blue}{\texttt{end \ while}}$
+	$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 	// insert entry to clock
 	Clk.insert(entry)
-$\textcolor{ovgu-blue}{end \ if}$
+$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 return entry 
 \end{lstlisting}
 
-\section{CLOCK-PRO}
+\subsection{CLOCK-PRO}
 
 Although the clock algorithm performs well in a variety of use cases, problems arise with weakly localized access patterns, as described in \cite{jiang2005making}.
 Some problems include:
@@ -836,22 +863,22 @@ $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
 
-if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+if Clk.contains(entry) == true $\textcolor{ovgu-blue}{\texttt{then}}$
 	// cache hit
-	if entry.referenceBit == false $\textcolor{ovgu-blue}{then}$
+	if entry.referenceBit == false $\textcolor{ovgu-blue}{\texttt{then}}$
 		entry.referenceBit = true
-	$\textcolor{ovgu-blue}{end \ if}$
+	$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 else
 	// cache miss
-	if Clk.isFull() == true $\textcolor{ovgu-blue}{then}$
+	if Clk.isFull() == true $\textcolor{ovgu-blue}{\texttt{then}}$
 		while Clk.countHot + Clk.countCold >= Clk.capacity
 			// run cold-hand to find evict candidate
 			evict-candi = Clk.coldHand
-			if evict-candi.ColdBit == true 
-				if evict-candi.referenceBit == true
+			if evict-candi.coldBit == true $\textcolor{ovgu-blue}{\texttt{then}}$
+				if evict-candi.referenceBit == true $\textcolor{ovgu-blue}{\texttt{then}}$
 					// turn evict-candi to hot entry
-					evict-candi.HotBit == true
-					evict-candi.ColdBit == false
+					evict-candi.hotBit == true
+					evict-candi.coldBit == false
 					Clk.countHot += 1
 					Clk.countCold -= 1
 				else
@@ -860,23 +887,23 @@ else
 					Clk.turnNonResident(evict-candi)
 					Clk.countCold -= 1
 					Clk.countTest += 1	
-				$\textcolor{ovgu-blue}{end \ if}$
+				$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 			$\textcolor{ovgu-blue}{end \ if}$
 			// move test hand if necessary
 			while Clk.countTest > Clk.testCapacity
 				// test hand turns resident cold entry to non-resident cold entry
 				// if still in test-period
 				entry = Clk.testHand
-				if entry.testBit == true
+				if entry.testBit == true $\textcolor{ovgu-blue}{\texttt{then}}$
 					Clk.testHand = Clk.testHand.next
 					Clk.removeNonResidentEntry(entry)
 					Clk.countTest -= 1
 					if Clk.coldCapacity > 1
 						Clk.coldCapacity -= 1
-					$\textcolor{ovgu-blue}{end \ if}$
-				$\textcolor{ovgu-blue}{end \ if}$
+					$\textcolor{ovgu-blue}{\texttt{end \ if}}$
+				$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 				Clk.testHand = Clk.testHand.next
-			$\textcolor{ovgu-blue}{end \ while}$
+			$\textcolor{ovgu-blue}{\texttt{end \ while}}$
 			// move cold hand
 			Clk.coldHand = Clk.coldHand.next
 			// move hot hand if necessary
@@ -884,21 +911,21 @@ else
 				// hot hand removes reference bit on hot entry 
 				// or turn not referenced hot entry to cold entry
 				entry = Clk.hotHand
-				if entry.hotBit == true
-					if entry.referenceBit == true 
+				if entry.hotBit == true $\textcolor{ovgu-blue}{\texttt{then}}$
+					if entry.referenceBit == true $\textcolor{ovgu-blue}{\texttt{then}}$
 						entry.referenceBit == false
 					else
 						entry.hotBit = false
 						entry.coldBit = true
 						Clk.countHot -= 1
 						Clk.countCold += 1
-					$\textcolor{ovgu-blue}{end \ if}$
-				$\textcolor{ovgu-blue}{end \ if}$
+					$\textcolor{ovgu-blue}{\texttt{end \ if}}$
+				$\textcolor{ovgu-blue}{\texttt{end \ if}}$
 				Clk.hotHand = Clk.hotHand.next
-			$\textcolor{ovgu-blue}{end \ while}$
-		$\textcolor{ovgu-blue}{end \ while}$
+			$\textcolor{ovgu-blue}{\texttt{end \ while}}$
+		$\textcolor{ovgu-blue}{\texttt{end \ while}}$
 	Clk.insert(entry)
-$\textcolor{ovgu-blue}{end \ if}$	
+$\textcolor{ovgu-blue}{\texttt{end \ if}}$	
 return entry 
 \end{lstlisting}
 \todo[inline]{maybe divide in two parts, eviction in own listing, it could be a bit long}
@@ -921,7 +948,8 @@ So clock-pro has the advantage of LRU in case of strong locality and better perf
 - show evict method 
 - try to make evict method more understandable
 
-\section{ML-CLOCK}
+\subsection{ML-CLOCK}
+\label{sub:ml-clock}
 %- newest algorithm of this three\\
 %- based on single layer perceptron and online learning \\
 %- also uses clock approach for efficient access compared to list based\\
@@ -1053,8 +1081,17 @@ return entry
 \end{table}
 
 
-- two separated clocks one for clean entries one for dirty and also order by block address 
+- two separated clocks one for clean entries one for dirty and also order by block address \\
 - lock needed for get function because entry can change clock
+
+\section{Usage}
+- code changes for compilation of haura with different cache\\
+- how to compile haura with different cache implementation \\
+%To implement different cache policies we need to modify src/database/mod.rs.
+%Because there the DMU will be created.
+%Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
+
+\section{Summary}
 
 \chapter{Evaluation}
 \label{cha:evaluation}
@@ -1155,41 +1192,3 @@ Magdeburg, \today
 %- most algorithms based an equally sized pages/entries without pinning\\
 %- ml-clock with extra locking which could lead to problems, clock and clock-pro uses atomics to prevent this
 
-%\begin{lstlisting}[mathescape=true,caption=simplified Cache trait,label=lst:simplified Cache trait]
-%$\textcolor{ovgu-blue}{trait}$ Cache {
-%	$\textcolor{ovgu-blue}{fn}$ new(capacity: usize) -> $\textcolor{ovgu-blue}{Self}$
-%	
-%    type Key: Eq + Hash;
-%    type Value;
-%    type ValueRef: AddSize + StableDeref<Target = Self::Value>;
-%    type Stats: Stats;
-%
-%    fn new(capacity: usize) -> Self;
-%    fn contains_key(&self, key: &Self::Key) -> bool;
-%    fn get(&self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
-%    fn get_mut(&mut self, key: &Self::Key, count_miss: bool) -> Option<Self::ValueRef>;
-%    fn remove<F>(&mut self, key: &Self::Key, f: F) -> Result<Self::Value, RemoveError>
-%    where
-%        F: FnOnce(&mut Self::Value) -> usize;
-%    fn force_remove(&mut self, key: &Self::Key, size: usize) -> bool;
-%    fn change_key<E, F>(&mut self, key: &Self::Key, f: F) -> Result<(), ChangeKeyError<E>>
-%    where
-%        F: FnOnce(
-%            &Self::Key,
-%            &mut Self::Value,
-%            &dyn Fn(&Self::Key) -> bool,
-%        ) -> Result<Self::Key, E>;
-%
-%    fn force_change_key(&mut self, key: &Self::Key, new_key: Self::Key) -> bool;
-%    fn evict<F>(&mut self, f: F) -> Option<(Self::Key, Self::Value)>
-%    where
-%        F: FnMut(&Self::Key, &mut Self::Value, &dyn Fn(&Self::Key) -> bool) -> Option<usize>;
-%
-%    fn insert(&mut self, key: Self::Key, value: Self::Value, size: usize);
-%    fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = &'a Self::Key> + 'a>;
-%    fn size(&self) -> usize;
-%    fn capacity(&self) -> usize;
-%    fn stats(&self) -> Self::Stats;
-%    fn verify(&mut self);
-%}
-%\end{lstlisting}
