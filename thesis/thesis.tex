@@ -198,29 +198,29 @@ The goal of the memory hierarchy is to develop systems that have enough fast mem
 
 - next chapter gives a short overview of topics necessary to understand the following work\\
 
-\section{$B^{\epsilon}$-tree}
+\section{$B^{\varepsilon}$-tree}
 
-% own section for $B^{\epsilon}$-tree
-%The $B^{\epsilon}$-tree is a write-optimized version of the B-tree, which are widely used for filesystems or databases, with better performance for insert, range queries and key-value updates \cite{bender2015introduction}.
-%Unlike the B-tree, the $B^{\epsilon}$-tree has a buffer for each node, where changes to the subtree associated with the node are stored and
+% own section for $B^{\varepsilon}$-tree
+%The $B^{\varepsilon}$-tree is a write-optimized version of the B-tree, which are widely used for filesystems or databases, with better performance for insert, range queries and key-value updates \cite{bender2015introduction}.
+%Unlike the B-tree, the $B^{\varepsilon}$-tree has a buffer for each node, where changes to the subtree associated with the node are stored and
 %only when the buffer overflows, the changes are written to the nodes of the subtree, which reduces the number of write operations and the data fragmantation.
 
-The idea for the $B^{\epsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the trade off between insertions and queries for comparison-based external memory dictionaries.
+The idea for the $B^{\varepsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the trade off between insertions and queries for comparison-based external memory dictionaries.
 
-The basis for $B^{\epsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
+The basis for $B^{\varepsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
 because the entire node must be updated for each small write.
 However, if we reduce the node size to optimize for small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
 
-To optimize for both cases, the $B^{\epsilon}$-tree adds a buffer to each internal node of size $B - B^{\epsilon} $ with $ 0 \leq \epsilon < 1$ as shown in figure \ref{fig:structure B-epsilon-tree}.
+To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown in figure \ref{fig:structure B-epsilon-tree}.
 
 \begin{figure}[ht]
 	\centering
 	\includegraphics[scale=0.6]{B-epsilon_structure.png}
-	\caption{Structure $B^{\epsilon}$-tree from \cite{bender2015introduction}}
+	\caption{Structure $B^{\varepsilon}$-tree from \cite{bender2015introduction}}
 		\label{fig:structure B-epsilon-tree}
 \end{figure}
 
-As new data is inserted into the $B^{\epsilon}$-tree, the data is written to the buffer of the root node as "insert message".
+As new data is inserted into the $B^{\varepsilon}$-tree, the data is written to the buffer of the root node as "insert message".
 Only when the root node's buffer is full, a batch of messages is flushed down the tree, preferably to the node with the most pending messages. 
 If a node needs to be split, the buffer is also split between the new nodes.
 When the insert message arrives at a leaf node, the data is added to the leaf.
@@ -229,10 +229,10 @@ This behavior leads to better insertion performance than B-trees, since insertio
 the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
 On deletion a "tombstone message" will be insert into the tree and will be flushed down the tree to a leaf, like an insertion message.
 
-For queries, in the $B^{\epsilon}$-tree, we also need to check buffer on the way to the leaf nodes to see if there are any relevant messages.
+For queries, in the $B^{\varepsilon}$-tree, we also need to check buffer on the way to the leaf nodes to see if there are any relevant messages.
 These messages must be processed, but that does not mean they are flushed down immediately, this can happen later.
 
-So the $B^{\epsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
+So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
 \todo[inline]{write a bit more detailed about this}
 
 
@@ -252,12 +252,11 @@ JULEA then runs the haura instance detached from the user applications, which me
 
 \todo[inline]{insert schemes from haura docu for better understanding}
 \todo[inline]{insert link to haura docu as source}
-\todo[inline]{epsilon is written diffrently then in original paper}
 
-The development of Haura started to compare $B^{\epsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the haura stack
+The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the haura stack
 achieved an improved write performance especially for small random write workloads and better sequential throughput.
 Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
-The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\epsilon}$-tree.
+The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
 
 As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
 Haura is structured in layers as shown in figure \ref{fig:structure haura}.
@@ -271,10 +270,10 @@ Haura is structured in layers as shown in figure \ref{fig:structure haura}.
 \todo[inline]{check were I have to put the source for the figure, in text or under the figure}
 
 
-At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\epsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
+At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\varepsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
 
-The next layer, the \emph{Tree Layer} manages the $B^{\epsilon}$-trees.
-The \emph{database layer} sends messages to the $B^{\epsilon}$ trees consisting of key-value or key-message pairs that the $B^{\epsilon}$ trees process. A message for key-message pair can contain arbitrary data or apply arbitrary code on data.
+The next layer, the \emph{Tree Layer} manages the $B^{\varepsilon}$-trees.
+The \emph{database layer} sends messages to the $B^{\varepsilon}$ trees consisting of key-value or key-message pairs that the $B^{\varepsilon}$ trees process. A message for key-message pair can contain arbitrary data or apply arbitrary code on data.
 Key-value pairs are stored in leave nodes and key-message nodes are stored in inner nodes of the tree.
 Each node is an object for the \emph{Data Management Layer} and is tracked individually.
 
@@ -444,10 +443,6 @@ This is because web caches have a highly skewed access distribution with low loc
 many entries accessed only once, \cite{mahanti2000traffic}.
 
 \section{Improved Cache Replacement Policies}
-%LRU is simple, uses very limited information and works good in cases of strong locality.
-%Also LRU is the most used or the most policies are based on LRU.
-%But the downside is scan and loop cases in which LFU performs better.
-%Researcher tried to improve cache replacement with different ideas.
 
 All cache replacement policies presented in the last section have significant drawbacks.
 Bélády's algorithm must know the access pattern in advance and is only of theoretical value.
@@ -459,38 +454,55 @@ To further enhance cache performance, several additional cache replacement polic
 most of these policies are based on the policies presented so far.
 The strategies for improvement can be divided into 4 categories,
 (1) explicit user-level hints, (2) using a deeper history information
-(3) detection of access patterns (strategies (1)-(2) from \cite{10.1145/511399.511340})
-and (4) using ml-techniques, which we will consider in more detail next.
+(3) detection of access patterns (strategies (1)-(3) from \cite{10.1145/511399.511340})
+and (4) the use of ml-techniques, which we will discuss in more detail below.
 
 \subsection{Explicit User-Level Hints}
-%First explicitly provided hints given by the user.
-%This seem like a good idea but this is highly application specific and also depends on the hardware.
-%So for every case someone has to program this into the code of an application.
-%This is way to much work.
-%Proposed by \cite{cao1994application} and \cite{patterson1995informed}
-%% more informatin in LIRS paper
 
-First improvement strategy is through user or application given hints.
+The first improvement strategy is through user-level hints.
 This idea was proposed by \cite{cao1994application} and \cite{patterson1995informed}.
-It can achieve better performance then LRU but the user must know the underlying access pattern of his application to give good guidance.
-It is better to achieve improvement without explicit hints because i
-I/O pattern not always known upfront.
-Could also be hardware dependent and change from system to system.
+The idea is that the user provides hints about which cache entries have a low probability of being accessed in the near future.
+The problem with this approach is that the user must understand the access pattern in order to provide appropriate hints, which increases the programming effort \cite{10.1145/511399.511340}.
+Therefore, user-level hints can be a solution in special cases,
+but they are less suitable as a general cache replacement policy.
 
 \subsection{Utilizing Deeper History Information}
-Second approach is to use deeper history information because LRU only uses the last reference and not more.
-One example is LRU-K proposed by \cite{o1993lru},
-which uses the k-last references, mostly k=2 is the best choice.
-This is simple and easy to implement but it can quickly remove new and seldom used entries but recently and often used are harder to evict.
-For application with significant differences between access of entries this works well but on relatively equal distributed accesses it doesn't perform as well.
-Also we still have the cost for maintaining a priority queue.
-Another approach for  deeper history information is LRFU \cite{lee2001lrfu}. 
-It tracks frequency and recency for each entry and uses a weighting factor $\lambda$ do decide which is more important.
-But $\lambda$ is crucial for performance and highly dependent on system and application,
-so not really generally applicable.
-Another example is 2Q  algorithm by \cite{shasha19942q} which uses multiple queues.
-An \emph{A1$_{in}$} FIFO queue for new entries, \emph{A1$_{out}$} for entries recently evicted, so not resident in memory only meta information and \emph{A$_m$} as the main buffer for frequently accessed entries.
-The problem is again that the user have to set parameters for the \emph{A1$_{in}$}, \emph{A1$_{out}$} and \emph{A$_m$} and Thresholds when an entry will be promoted to \emph{A$_m$} and for switch from \emph{A1$_{in}$} to \emph{A1$_{out}$}.
+
+The second strategy is to use more history information.
+LRU in particular has the problem that it uses very little information, only the last reference, to decide which entry to evict.
+
+One example for this approach is LRU-K proposed by \cite{o1993lru}.
+LRU-K works similar to LRU, but instead of using only the last reference, like LRU,
+the Kth-to-last reference are used for the eviction decision. 
+Usually $K = 2$ is chosen, for simplicity and better adaptability to different access patterns then $K > 2$.
+The advantage of LRU-K is that it is better suited for loops and scanning access patterns.
+This is because cache entries that are referenced only once are removed from the cache more quickly than with LRU.
+However, LRU-K has the same major problem as LRU, which is the cost associated with using a priority queue.
+Any manipulation of the priority queue requires $O(\log(n)$ operations.
+
+The 2Q policy of \cite{shasha19942q} attempts to achieve the same performance as LRU-K, but without the $O(\log(n)$ complexity of using a priority queue.
+Instead of using just one queue, 2Q uses two queues.
+An FIFO queue \emph{A1} and an LRU priority queue \emph{A$_m$} as main cache.
+Also, the \emph{A1$_{in}$} is split into \emph{A1$_{in}$} for entries that actually exist in the cache and \emph{A1$_{out}$} for entries where only the reference is stored.
+If a cache hit occurs and the entry is in \emph{A1$_{out}$}, the entry is promoted to the main cache \emph{A$_m$}.
+If there is a cache hit in \emph{A1$_{in}$}, the entry remains in \emph{A1$_{in}$}.
+Also, for a cache hit in \emph{A$_m$}, \emph{A$_m$} behaves like a priority queue and places the entry at the beginning of \emph{A$_m$}.
+The entry for eviction is either the front entry of the \emph{A1$_{in}$} queue, if the length of the \emph{A1$_{in}$} is greater then a certain threshold, or the tail of the 
+\emph{A$_m$} otherwise.
+Like LRU-K, 2Q is better suited for looping and scanning access patterns.
+This is because only once referenced entries leave the cache quickly.
+However, the advantage is that 2Q has a constant time overhead.
+The disadvantage on the other hand is that the 
+length of the \emph{A1$_{in}$} and \emph{A1$_{out}$} queues is predefined.
+But these parameters needs to be tuned for each use case to achieve optimal performance.
+
+Another example is Least Recently/Frequently Used(LRFU) policy.
+LRFU combines LRU and LFU policy in that it tracks the frequency and reference for each entry and uses a weighting factor $\lambda$ do decide which is more important.
+The problem with this approach is that the $\lambda$ is fixed.
+It is therefore not adaptable to changing access patterns.
+Furthermore, the $\lambda$ parameter is highly dependent on the hardware used and the access pattern.
+We must therefore determine the correct $\lambda$ for each use case.
+Therefore, LRFU is not suitable as a general cache replacement algorithm.
 
 \subsection{Detection and Adaption of Access Patterns}
 The third approach is to detect and adapt to access patterns.
@@ -770,7 +782,7 @@ Due to its simplicity and good performance in most cases, the clock algorithm is
 
 
 \subsection{K-CLOCK}
-
+\todo[inline]{check if I should change the name to GCLOCK}
 Similar to normal clock algorithms but used a counter instead of just a bit for entry accesses.
 The variable k can be chosen usually k=2 gives best performance.
 Implemented in Haura with k=2.
