@@ -337,12 +337,6 @@ Caching is an on going research topic and researches came up with various soluti
 	\label{tab:caching hierarchy}
 \end{table}
 
-%A cache hit occurs when the requested data is in the cache.
-%If the requested data is not in the cache, there is a cache miss.
-%Furthermore, if the cache is full and a cache miss occurs we have do decide which cache block will be evicted to move the requested block into the cache.
-%This is one of the main problems of caches. If we evict an cache entry which we will need in the recent future we have an additional cache miss, so we want to avoid that.
-%To decide which cache entry will be evicted cache replacement policies are used.
-
 When the cache is full and a cache miss occurs, we have to decide which cache entry tor remove in order to move the requested block into the cache.
 This is one of the main problems of caches. If we displace a cache entry that we will need in the near future, we will have an additional cache miss, which we want to avoid.
 To decide which cache entry to remove, heuristics, the cache replacement policies, are used.
@@ -399,46 +393,34 @@ Each new entry is insert at the front of the priority queue and the entry at the
 In case of a cache hit, the entry that is in the priority queue is placed at the front of the queue.
 In general, it is too costly to keep track of the last access time, and only approximate values, such as age bits, are used instead.
 
-Overall, LRU is still a simple policy that is easy to implement.
-Compared to FIFO, we have the overhead of additional metadata, access times or their approximation for each cache entry. 
-But with the same or better performance.
-The reason for this is that in many cases the access distribution is skewed and 
-due to the reordering of the priority queue on cache hits, frequently accessed cache entries have a higher chance of remaining in the cache, while in FIFO they are replaced more frequently \cite{van1992lru}.
+Compared to FIFO, LRU performs equal or better \cite{van1992lru}.
+The reason for this is that in many cases the access distribution is skewed, so that a small number of cache entries are accessed more frequently than the others.
+As a result of this, the entries that are frequently accessed are pushed to the top of the priority queue and thus are rarely evicted from the cache.
 
-One disadvantage of LRU is that when a cache hit occurs, the order in the priority queue changes.
+One disadvantage, compared to FIFO is, that we have the overhead of additional metadata, the access time or the approximation of it, for each cache entry.
+Thus, LRU requires more memory to store the same number of cache entries.
+Furthermore, cache hits also cause additional overhead. 
+This is because a cache hit changes the order of priority queue.
 Especially in cases where multiple tasks use the cache, this must happen behind a lock to ensure consistency.
+This can lead to additional waiting times for multiple tasks that have to wait until the cache hit has been processed.
+
 Another disadvantage is that LRU does not use frequency information.
 Thus, an entry that has been accessed frequently but not recently could be evicted for a entry that has been accessed infrequently but recently.
-Also LRU has problems with looping or scanning accesses pattern, like iterating over an array or searching a file.
-Because then a burst of often only once accessed entries evicts entries which are accessed more frequently and should stay in cache.
+An example for that is are looping or scanning pattern, like iterating over an array or searching a file.
+Then a burst of often only once accessed entries, can lead to the eviction of entries which are accessed more frequently and should stay in cache.
+
+Despite these drawbacks, LRU is widely used.
+This is because it is still a simple policy that is easy to implement.
+It has good performance with limited additional overhead and works well with strong locality and skewed access distribution.
 
 \subsection{Least Frequently Used}
-%The last important cache replacement strategy is Least-Frequently-Used (LFU).
-%The idea behind this is that a cache entry that has been used frequently in the past will also be used in the future.
-%When a cache miss occurs, the least frequently accessed entry will be evicted.
-%In case more then one entry have the same access count we have to use recency or decide randomly which entry has to be evicted.
-%Also, the entries are ordered in a single linked list and each entry has an counter which increased for each access.
-%So we have the same problem as with LRU. We have to keep an ordered list.
-%Like in LRU, often only an approximation is used because to track all information is to expensive.
-%Instead of an Frequency counter for all possible entries only the entries actually in cache have a counter.
-%Secondly often only a few bits are used as counter so the number of accesses is which can be tracked is limited. 
-%The advantage of LFU is that entries with a low or 0 access count are removed relatively quickly, while entries with frequent access remain in the cache.
-%This is the reason why LFU works better than LRU in scanning scenarios.
-%One problem is that in cases an entry with high access count which is then not or seldom access, is hard to evict even so it is rarely used.
-%Also LFU do not use or factor in recent access pattern like LRU.
-%To mitigate this case, aging is used, i.e. after a specified time the counter is reset or decreased or only frequency of windows are used.
-%But this is extra work.
-% sources: "An experimental comparison of cache algorithms"
-% "LPR: Learning-based Page Replacement Scheme for Scientific Applications"
-% wikipedia
-% \cite{karakostas2000practical} -> lfu often used for web caches
 
 % maybe a different start for this chapter?
 The Least Frequently Used(LFU) policy is based on the idea that a cache entry that has been used frequently in the past will also be used in the future.
 Thus, when a cache miss occurs, the least frequently accessed entry is evicted.
 In case more then one entry have the same access count we have to use FIFO or decide randomly which entry has to be evicted.
 
-All cache entries are stored in a priority queue, usually implemented as double linked list, sorted by there access frequency.
+All cache entries are stored in a priority queue, usually implemented as double linked list or a min-heap, sorted by there access frequency.
 The entry with the lowest frequency in cache is at the back and the entry with the highest frequency in cache is at the front of the priority queue.
 As metadata, we have a counter assigned for each cache entry.
 On a cache hit the counter for the entry will be incremented and the entry could change his position in the priority queue.
@@ -455,13 +437,32 @@ There two main strategies used to make LFU more adoptable for this case.
 The first is aging, which means that the access counter for each entry is decreased after  a certain amount of time.
 And the second strategy is to use only a fixed time window to count accesses and after the window restart each access counter \cite{karakostas2000practical}.
 
-\section{Improved Cache Replacement Policies}
-LRU is simple, uses very limited information and works good in cases of strong locality.
-Also LRU is the most used or the most policies are based on LRU.
-But the downside is scan and loop cases in which LFU performs better.
-Researcher tried to improve cache replacement with different ideas.
+LFU is not used as often as LRU.
+Since it is more complex without performing better in most cases.
+However, one important area where LFU outperforms LRU is web caches.
+This is because web caches have a highly skewed access distribution with low locality and  
+many entries accessed only once, \cite{mahanti2000traffic}.
 
-\subsection{Explicit User Hints}
+\section{Improved Cache Replacement Policies}
+%LRU is simple, uses very limited information and works good in cases of strong locality.
+%Also LRU is the most used or the most policies are based on LRU.
+%But the downside is scan and loop cases in which LFU performs better.
+%Researcher tried to improve cache replacement with different ideas.
+
+All cache replacement policies presented in the last section have significant drawbacks.
+Bélády's algorithm must know the access pattern in advance and is only of theoretical value.
+FIFO suffers from the Bélády's anomaly and has higher miss rates then the other policies.
+LRU has problems with access patterns that have only weak locality, such as loop or scan patterns.
+And LFU is has to much overhead and only outperforms LRU for highly skewed access patterns. 
+
+To further enhance cache performance, several additional cache replacement policies have been developed and
+most of these policies are based on the policies presented so far.
+The strategies for improvement can be divided into 4 categories,
+(1) explicit user-level hints, (2) using a deeper history information
+(3) detection of access patterns (strategies (1)-(2) from \cite{10.1145/511399.511340})
+and (4) using ml-techniques, which we will consider in more detail next.
+
+\subsection{Explicit User-Level Hints}
 %First explicitly provided hints given by the user.
 %This seem like a good idea but this is highly application specific and also depends on the hardware.
 %So for every case someone has to program this into the code of an application.
@@ -488,8 +489,8 @@ It tracks frequency and recency for each entry and uses a weighting factor $\lam
 But $\lambda$ is crucial for performance and highly dependent on system and application,
 so not really generally applicable.
 Another example is 2Q  algorithm by \cite{shasha19942q} which uses multiple queues.
-An A1in FIFO queue for new entries, Aout for entries recently evicted, so not resident in memory only meta information and Am as the main buffer for frequently accessed entries.
-The problem is again that the user have to set parameters for the A1in, A1out and Am and Thresholds when an entry will be promoted to Am and for switch from A1in to A1out.
+An \emph{A1$_{in}$} FIFO queue for new entries, \emph{A1$_{out}$} for entries recently evicted, so not resident in memory only meta information and \emph{A$_m$} as the main buffer for frequently accessed entries.
+The problem is again that the user have to set parameters for the \emph{A1$_{in}$}, \emph{A1$_{out}$} and \emph{A$_m$} and Thresholds when an entry will be promoted to \emph{A$_m$} and for switch from \emph{A1$_{in}$} to \emph{A1$_{out}$}.
 
 \subsection{Detection and Adaption of Access Patterns}
 The third approach is to detect and adapt to access patterns.
@@ -504,7 +505,7 @@ So  $L_1$ measures recency and $L_2$ the frequency.
 To achieve adaptability the sizes of both queues is not fixed but depends on the workload and can change over time.
 ARC can outperform LRU and LFU on many real-world traces.
 
-\subsection{Using Machine Learing}
+\subsection{Using Machine Learning}
 A very recent trend is to incorporate ML-techniques to learn the underlying access pattern.
 One example is Fuzzy Page Replacement Algorithm by \cite{akbari2020page}
 which used Fuzzy c-means algorithm to find cluster in set of all cache entries an base the decision for eviction on the cluster.
