@@ -497,37 +497,77 @@ length of the \emph{A1$_{in}$} and \emph{A1$_{out}$} queues is predefined.
 But these parameters needs to be tuned for each use case to achieve optimal performance.
 
 Another example is Least Recently/Frequently Used(LRFU) policy.
-LRFU combines LRU and LFU policy in that it tracks the frequency and reference for each entry and uses a weighting factor $\lambda$ do decide which is more important.
+LRFU combines LRU and LFU methods by tracking the frequency and reference for each entry and using a weighting factor $\lambda$ to decide which is more important.
 The problem with this approach is that the $\lambda$ is fixed.
 It is therefore not adaptable to changing access patterns.
 Furthermore, the $\lambda$ parameter is highly dependent on the hardware used and the access pattern.
 We must therefore determine the correct $\lambda$ for each use case.
-Therefore, LRFU is not suitable as a general cache replacement algorithm.
+Therefore, LRFU is also not suitable as a general cache replacement algorithm.
 
 \subsection{Detection and Adaption of Access Patterns}
-The third approach is to detect and adapt to access patterns.
-One example is Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340} which uses a queue for cold entries with high inter-reference recency and a queue for hot entries with low inter-reference recency.
-Only cold resident entries will be evicted the chance to evict a hot entries is low, need to change to cold entry first.
-LIRS is the basis for clock-pro.
-We again have the problem that we have to set parameters which are application dependent queue sizes but it is somewhat adaptable clock-pro even more.
+The third strategy is to identify specific access patterns in the history information for certain entries, based on either temporal or spatial locality, and treat these entries differently from the other entries.
+
+An example of this strategy is Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340}.
+Instead of using recency directly like LRU, LIRS uses inter-reference recency (IRR), also called reuse distance.
+IRR refers to the number of other entries accessed between two consecutive references to a given entry.
+This allows the cache entries to be divided into either hot or cold entries.
+Hot entries have a low inter-reference recency and are likely to be accessed again in future.
+They should therefore remain in the cache.
+And cold entries on the other hand have a hight inter-reference recency and are unlikely to be accessed again in future, which means that they can be easily removed without causing many additional cache misses.
+So we divide the cache capacity into a smaller part for hot entries and a larger part for cold entries.
+Furthermore, a variable number of non-resident cold entries can be stored.
+The non-resident cold entries are necessary to track the IRR.
+LIRS uses one LRU priority queue and one FIFO queue, as shown in \ref{fig:lirs queues}.
+The LRU-queue stores all hot, all resident cold and non-resident cold entries.
+The FIFO queue stores only the resident cold entries and is used to find the entry to be evicted.
+Instead of tracking the IRR directly, the position between entries in the LRU priority queue is used to determine the IRR and to 
+to control when a cold entry converts to a hot entry and vice versa.
+The advantage of LIRS is that it eliminates the weakness of LRU for weak locality workloads with relatively low overhead.
+The disadvantage is that we still have to predefine the ratio between the capacity for hot and cold entries.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.5]{lirs_queues.jpg}
+	\caption{Shows the LRU stack and FIFO queue used for LIRS, original from \cite{10.1145/511399.511340} labeling  altered.}
+		\label{fig:lirs queues}
+\end{figure}
+
 
 Another example is Adaptive Replacement Cache (ARC) \cite{270366}.
-ARC shares some similarities with 2Q, it also uses 2 queues $L_1$ for entries entries who are referenced only once in the recent past and $L_2$ for entries accessed at least twice in the recent past.
-So  $L_1$ measures recency and $L_2$ the frequency.
-To achieve adaptability the sizes of both queues is not fixed but depends on the workload and can change over time.
-ARC can outperform LRU and LFU on many real-world traces.
+ARC uses two LRU priority queues, $L_1$ for entries entries who are accessed only once in the recent past and $L_2$ for entries accessed at least twice in the recent past.
+So $L_1$ measures recency and $L_2$ the frequency.
+For a cache with the capacity for $c$ number of entries and each queue can also hold $c$ number of entries.
+The cache saves $2c$ entries, of which $c$ are non-resident entries.
+To achieve adaptability the number of resident entries for each queue is not fixed and changes according to the workload.
+Each time a cache hit occurs on a non-resident entry in one of the queues, the number of resident entries for that queue is increased
+depending on the ratio between the number of non-resident entries of each queue.
+Also, whenever a cache hit occurs on an $L_1$ entry, whether resident or non-resident, it is removed from $L_1$ and added to $L_2$.
+So depending on the workload and thus the non-resident entries being accessed, ARC behaves more like LRU or LFU.
+The significant advantage of ARC is that it is adoptable and has no parameters like LIRS or 2Q that need to be manually optimized.
+Also the the space overhead is still low with only 0.75 percent of the cache size \cite{megiddo2004outperforming}.
 
 \subsection{Using Machine Learning}
-A very recent trend is to incorporate ML-techniques to learn the underlying access pattern.
-One example is Fuzzy Page Replacement Algorithm by \cite{akbari2020page}
-which used Fuzzy c-means algorithm to find cluster in set of all cache entries an base the decision for eviction on the cluster.
-Another example is Learning-based Page Replacement (LPR) by \cite{kim2022lpr} which uses 
-uses LRU and MRU and learn the weighting factor between the two policies through online through reinforcement learning.
-ML-clock also falls into this category.
+
+The last strategy has emerged only in recent years and seeks to incorporate machine learning techniques to learn the underlying access pattern to increase the hit rate.
+This can be done either by online learning, where learning occurs during execution and is adoptable to changing workloads, or by offline learning, where parameters are learned before execution using a predefined data set.
+
+An example of this strategy is fuzzy page replacement algorithm by \cite{akbari2020page}, which uses
+fuzzy c-means, an unsupervised machine learning technique, to find clusters in all cache entries based on the frequency, recency and time difference between two consecutive accesses for each entry.
+Each time an entry needs to be evicted, the entry with the greatest distance to all cluster centers is evicted.
+
+Another example is proposed by \cite{choi2022learning} which uses Seq2Seq network, a type of recurrent neural network designed for handling sequence data.
+The history of the last accessed cache entries is used to predict a sequence of the future accesses.
+The predicted sequence is then applied to conventional cache replacement algorithms, like LFU or LRU, to prevented unnecessary evictions. 
+
 
 \section{Summary}
 
-
+- heuristics mostly work for the intended cases but have problems in other cases, give examples for that\\
+- machine learning the new hype\\
+- many new papers for this topic \\
+- have the chance to actual be adoptable to all possible access patterns and significant increase miss ratio for wide array of use cases \\
+- but can have higher overhead compared to simple heuristics\\
+- open question which approach is best for machine learning techniques.
 
 \chapter{Related Work}
 \label{cha:related work}
@@ -717,12 +757,15 @@ Each fetched entry is always inserted into the cache, and then the eviction func
 So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the eviction function is called
 is called before inserting so that the cache size is never exceeded.
 
-Furthermore, we have added the \texttt{get\_mut}()-function, \ref{lst:simplified Cache trait} line 5, 
+Furthermore, we have added the \texttt{get\_mut}()-function, listing \ref{lst:simplified Cache trait} line 5, 
 since the \texttt{get}()-function does not allow that the state of the cache changes.
 But this is needed for the implementation of ML-CLOCK, which we will discuss in more detail in section \ref{sub:ml-clock}.
 
 \section{Implemented Cache Replacement Policies}
 \label{sec:implemented cache replacement policies}
+
+-> need introduction text
+
 \subsection{CLOCK}
 
 Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for the Multics operating system.
@@ -862,6 +905,13 @@ These three handles are used to determine the test-period and find an eviction c
 Since the test period, the threshold for an block to switch from cold to hot and also back from hot to cold is based on the distance between the handles the algorithm is adoptable and doesn't need a fixed threshold unlike other algorithms like CAR or 2Q.
 
 \todo[inline]{insert image for clock-pro layout}
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.2]{clock_pro.png}
+	\caption{Figures show example of CLOCK-Pro. Hot entries marked with "H", cold entries with "C" and non-resident cold entries are shadowed.
+	The "$\sqrt{}$" marks referenced entries.}
+		\label{fig:clock in clock-pro}
+\end{figure}
 
 The hot-hand marks the tail of the list, which is the hot entry with the largest recency.
 Any hot entry that would pass the hot hand is converted to a cold entry.
@@ -1092,7 +1142,7 @@ return entry
 	\caption{Preference rules for victim entry}
 	\label{tab:ml-clock preference rules}
 \end{table}
-
+\todo[inline]{insert source}
 
 - two separated clocks one for clean entries one for dirty and also order by block address \\
 - lock needed for get function because entry can change clock
