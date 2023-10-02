@@ -990,24 +990,31 @@ as shown in \ref{fig:clock in clock-pro}.
 		\label{fig:clock in clock-pro}
 \end{figure}
 
+For each entry we have to store additional metadata.
+For each entry we need to store additional metadata. This includes whether it is a hot or cold entry, is it resident or non-resident in the cache, has it been referenced in the near past, and is the entry in the test phase.
+Each Hot Entry is always resident and not in the testing phase.
+Cold entries, on the other hand, may be resident or non-resident and may or may not be in the testing phase.
+Both can be referenced or not.
+The test phase is used to give cold entries the chance to turn into hot entries.
+As we will see in a moment.
 
+The $\textbf{Hand}_{hot}$ marks the tail of the list and therefore points to the last hot entry.
+Also, $\textbf{hand}_{hot}$ turns unreferenced hot entries into cold entries  and removes the reference for referenced hot entries when it passes over them.
 
+The $\textbf{Hand}_{cold}$ points to the last resident cold entry and is used to find the entry for eviction. Furthermore, $\textbf{Hand}_{cold}$ can turn referenced cold entries, resident or non-
+resident, in test phase to hot entries. 
+This is because the reference during test phase means that the inter-reference recency for this entry is low enough to be a categorized as an hot entry.
+Always an unreferenced resident cold entry is evicted.
+In this respect $\textbf{Hand}_{cold}$ operates like the hand in CLOCK.
+This means that $\textbf{Hand}_{cold}$ goes over all entries and removes the reference for cold entries not in test phase until it finds an resident cold entry which is unreferenced and thus can be evicted.
+So if there are only hot entries in the cache,  
+we must first convert hot entries to cold entries in order to evict an entry.
 
+And the $\textbf{Hand}_{cold}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
+In addition, passed non-resident cold entries are evicted.
+The reason for this is that the inter-reference recency has become too high to justify converting these entries to hot entries if these entries have not already been converted to hot entries.
 
-
-
-
-Hot blocks, with small recencies are at the head of the list and cold blocks with large recencies are at the tail of the list.
-After a cold block is insert into the clock, it is in a test period.
-If an access during this test period occurs, the cold block become a hot block.
-On the other hand if the cold block is not re-access during its test period, it will be removed.
-It is possible that during the test period that the cold block will be removed from memory and became non-resident, then the meta data still remains in the clock until the cold block runs out of his test period.
-So a non-resident cold block can when a re-access occurs, become a hot block.
-To generate free space only resident cold blocks are evicted.
-
-
-
-
+%hier weiter machen
 
 \bigskip
 
