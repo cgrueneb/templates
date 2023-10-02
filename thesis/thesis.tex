@@ -772,6 +772,7 @@ But this is needed for the implementation of ML-CLOCK, which we will discuss in 
 	3. CLOCK-Pro, detecting accesses pattern\\
 	4. ML-CLOCK, machine learning policy\\
 -> hash map used for all policies to speed up search time\\
+-> say something to usage 
 
 \subsection{CLOCK}
 
@@ -909,78 +910,19 @@ For our implementation, we use $K = 2$ because \cite{corbato1968paging} has show
 
 \subsection{CLOCK-Pro}
 
-%Although the clock algorithm performs well in a variety of use cases, problems arise with weakly localized access patterns, as described in \cite{jiang2005making}.
-%Some problems include:
-%\begin{itemize}
-%	\item[1.] - access of many rarely used blocks can evict frequently used blocks for example in sequential scans
-%	\item[2.] - a loop pattern which is slightly larger then the cache 
-%	\item[3.] - in application with a B-tree index like databases, index blocks should be in cache but data blocks
-%				evict index blocks because of the shorter access time
-%\end{itemize}
-% has been many alternative cache replacement algorithms LIRS is only one 
-% could also mention more
-% three categories of improvements
-% 1. explicitly provide hints by user or programmer
-% 2. detecting the access patterns failing LRU and switch to an other effective replacement strategie
-% 3. using deeper history access information -> LIRS falls into this category
-
-%These problems are general problems for LRU base replacement algorithms.
-%An early attempt to overcome these problems was Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340} which uses the inter reference recency, the reuse distance, instead of last recency and divide the blocks in hot, with with low interreference recency and cold, with high inter-reference recency.
-%Unlike LRU, LIRS attempts to keep the hot blocks in the cache and remove only the cold blocks, to overcome the weaknesses of LRU in cases of weak locality.
-%To determine which blocks are hot or cold, LIRS also tracks metadata information for a set of cache blocks that are not resident in the cache.
-%LIRS uses a stack that includes hot, cold, and non-resident cold blocks, and an additional list for only resident cold entries.
-%
-%Clock-Pro algorithm \cite{jiang2005clock} combines the efficiency from clock with the performance improvements from LIRS.
-%To achieve a better performance clock-pro combines LIRS stack and list in one circular list ordered by the last access.
-%Hot blocks, with small recencies are at the head of the list and cold blocks with large recencies are at the tail of the list.
-%After a cold block is insert into the clock, it is in a test period.
-%If an access during this test period occurs, the cold block become a hot block.
-%On the other hand if the cold block is not re-access during its test period, it will be removed.
-%It is possible that during the test period that the cold block will be removed from memory and became non-resident, then the meta data still remains in the clock until the cold block runs out of his test period.
-%So a non-resident cold block can when a re-access occurs, become a hot block.
-%To generate free space only resident cold blocks are evicted.
-%
-%Clock-pro uses three handles instead of one like clock.
-%These three handles are used to determine the test-period and find an eviction candidate.
-%Since the test period, the threshold for an block to switch from cold to hot and also back from hot to cold is based on the distance between the handles the algorithm is adoptable and doesn't need a fixed threshold unlike other algorithms like CAR or 2Q.
-%
-%The hot-hand marks the tail of the list, which is the hot entry with the largest recency.
-%Any hot entry that would pass the hot hand is converted to a cold entry.
-%The cold-hand points to the last resident cold page and is used to find a replacement candidate for eviction.
-%The test-hand points to the last cold page in the test period. Any cold entry which passes this hand leaves the test period and any non-resident cold page in the test period that passes this pointer is removed from the clock.
-%
-%To make clock-pro adaptable the ratio for hot to cold entries is not fixed, unlike LIRS which has a fixed parameter for this.
-%It also influences if clock-pro behaves more like LRU and less like LIRS.
-%The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
-%If there are no hot entries clock-pro behaves like clock algorithm. 
-%However in case of where clock algorithm struggles, loop and scans, clock-pro can achieve better results.
-%
-%If there are many entries with a small reuse distance (hot entries) and only a few cold entries. A new cold entry is evicted relatively quickly, but since it is still in the testing phase, it can be re-entered as a hot entry after an early re-access.
-%Hot entries also need more time before they are evicted because they must transform into cold entries before they are evicted.
-%For every cold page accessed during its test period we increment the capacity for cold pages by 1 and for every cold page which passes his test period without access we decrement the capacity by 1.
-%This will also adjust the speed  for cold- and hot-hand.
-%
-%So clock-pro has the advantage of LRU in case of strong locality and better performance like LIRS in case of weak locality.
-%
-%
-%- problems with recursion
-%- show evict method 
-%- try to make evict method more understandable
-
-%--------------------------------------------------------------------------------------------------------------------------------
-
-
-
 The CLOCK-Pro cache replacement policy \cite{jiang2005clock} combines the efficiency from CLOCK policy with the performance improvements from LIRS 
 \cite{10.1145/511399.511340}.
 The basic idea of CLOCK-Pro is the same as LIRS, which is to categorize cache entries into hot and cold entries based on inter-reference recency.
 The hot entries always stays in cache and the cold entries allow a quick eviction of rarely accessed entries.
 Also, like LIRS, CLOCK-Pro uses non-resident cold entries to track history information.
-However, CLOCK-Pro, unlike LIRS, is customizable because it does not require a predefined parameter to control the number of hot and cold entries.
+However, CLOCK-Pro, unlike LIRS, is adoptable because it does not require a predefined parameter to control the number of hot and cold entries.
 
 To achieve better efficiency than LIRS, CLOCK-Pro combines the LRU priority queue and a FIFO queue of LIRS in a circularly linked list.
 And instead of using only one hand, as in CLOCK, three hands are used to provide the functions of LIRS, 
 as shown in \ref{fig:clock in clock-pro}.
+For our implementation, we use a circular double linked list instead of circular single linked list, like in CLOCK.
+Because in some cases me need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
+Since the hands should not point to the same entry.
 
 \begin{figure}[ht]
 	\centering
@@ -990,10 +932,10 @@ as shown in \ref{fig:clock in clock-pro}.
 		\label{fig:clock in clock-pro}
 \end{figure}
 
-For each entry we have to store additional metadata.
 For each entry we need to store additional metadata. This includes whether it is a hot or cold entry, is it resident or non-resident in the cache, has it been referenced in the near past, and is the entry in the test phase.
 Each Hot Entry is always resident and not in the testing phase.
 Cold entries, on the other hand, may be resident or non-resident and may or may not be in the testing phase.
+Also, all newly inserted entries are resident cold entries in the test phase.
 Both can be referenced or not.
 The test phase is used to give cold entries the chance to turn into hot entries.
 As we will see in a moment.
@@ -1001,20 +943,23 @@ As we will see in a moment.
 The $\textbf{Hand}_{hot}$ marks the tail of the list and therefore points to the last hot entry.
 Also, $\textbf{hand}_{hot}$ turns unreferenced hot entries into cold entries  and removes the reference for referenced hot entries when it passes over them.
 
-The $\textbf{Hand}_{cold}$ points to the last resident cold entry and is used to find the entry for eviction. Furthermore, $\textbf{Hand}_{cold}$ can turn referenced cold entries, resident or non-
-resident, in test phase to hot entries. 
-This is because the reference during test phase means that the inter-reference recency for this entry is low enough to be a categorized as an hot entry.
-Always an unreferenced resident cold entry is evicted.
+
+The $\textbf{Hand}_{cold}$ is used to find the entry for eviction. 
 In this respect $\textbf{Hand}_{cold}$ operates like the hand in CLOCK.
-This means that $\textbf{Hand}_{cold}$ goes over all entries and removes the reference for cold entries not in test phase until it finds an resident cold entry which is unreferenced and thus can be evicted.
+This means that $\textbf{hand}_{cold}$ will traverse all entries until it finds a resident cold entry that is not referenced and thus can be evicted.
+If the entry to be evicted is in the test phase, it remains in the cache as a non-resident entry, if it is not in the test phase, it is completely evicted from the cache.
 So if there are only hot entries in the cache,  
 we must first convert hot entries to cold entries in order to evict an entry.
+Furthermore, $\textbf{Hand}_{cold}$ turn referenced cold entries in test phase to hot entries. 
+This is because the reference during test phase means that the inter-reference recency for this entry is low enough to be a categorized as an hot entry.
 
 And the $\textbf{Hand}_{cold}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
-In addition, passed non-resident cold entries are evicted.
-The reason for this is that the inter-reference recency has become too high to justify converting these entries to hot entries if these entries have not already been converted to hot entries.
+It also evicts passed non-resident cold entries from the cache.
+The reason for this is that non-resident cold entries that have not already been converted to hot entries have a high inter-reference recency 
+and therefore should not become hot entries.
 
-%hier weiter machen
+The listing \ref{lst:clock-pro-algorithm} shows the steps during the request of an entry.
+What we see is that all hands work together to find an entry for eviction, listing \ref{lst:clock-pro-algorithm} line 12 to line 65.
 
 \bigskip
 
@@ -1089,6 +1034,31 @@ $\textcolor{ovgu-blue}{\texttt{end \ if}}$
 return entry 
 \end{lstlisting}
 
+For a cache with capacity $m$ applies $m = m_c + m_h$.
+Here $m_c$ is the capacity for resident cold entries and $m_h$ is the capacity for hot entries.
+Furthermore, at most $m$ non-resident cold entries can be stored.
+So that the cache actual size can be at most $2m$ entries.
+To achieve adaptability, the number of hot and cold entries is not fixed.
+The capacity for resident cold entries $m_c$ is increased by one, if an cold entry is accessed during its test phase 
+and $m_c$ is decreased by one, if a cold entry leaves its test phase without being re-accessed.
+As we see in listing \ref{lst:clock-pro-algorithm} the actual hand movements are triggered by the count of hot and cold entries and the 
+capacity for hot and cold entries.
+This changes the behavior of CLOCK-Pro depending on the underlying workload.
+
+When $m_c$ is large, CLOCK-Pro behaves similarly to LRU. But if $m_c$ is small it behaves like LIRS.
+The small $m_C$ leads to a quicker eviction of newly inserted entries and the entries with low inter-reference recency, hot entries, have a higher 
+chance to stay in cache. Thus, in theory, CLOCK-Pro has the advantage of LRU for workloads with strong locality and 
+the advantages of LIRS for workloads with weak locality.
+
+For our implementation in Haura, we have to modify the CLOCK-Pro, due to the fact that the DMU manages the cache.
+So we can not turn non-resident cold entries to hot entries, which are always resident.
+Because this would imply that the cache tells the DMU what to do and not the other way around.
+
+Furthermore, the treatment of a pinned entry during eviction, is more complicated then for CLOCK and GCLOCK.
+We have already seen that for eviction all pointers work together. If the entry intended for eviction remains in the cache, it can happen that a 
+hand gets stuck on this entry, since the entry is pinned it cannot be removed. This can lead to an endless loop. To prevent this, this entry is 
+removed and temporally saved. So that the hands can work as intended.
+If it then occurs that the entry is pinned, the entry is again insert into the cache.
 
 \subsection{ML-CLOCK}
 \label{sub:ml-clock}
@@ -1226,13 +1196,6 @@ return entry
 - two separated clocks one for clean entries one for dirty and also order by block address \\
 - lock needed for get function because entry can change clock
 
-\section{Usage}
-- code changes for compilation of Haura with different cache\\
-- how to compile Haura with different cache implementation \\
-%To implement different cache policies we need to modify src/database/mod.rs.
-%Because there the DMU will be created.
-%Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
-
 \section{Summary}
 
 \chapter{Evaluation}
@@ -1267,6 +1230,10 @@ return entry
 \section{Results}
 
 - problems with results, capacity management doesn't work in all cases
+
+\subsection{Single threaded}
+
+\subsection{Multi threaded}
 
 \section{Summary}
 
