@@ -237,37 +237,32 @@ So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries 
 
 
 \section{Haura}
-%- introduce haura storage stack and explain structure\\
-%- short explaination B-epsilon-tree\\
-%- task of the cache\\
-
-\todo[inline]{check definition for haura with Johannes}
 
 Haura is a research storage stack written primarily in Rust.
-Unlike traditional file systems, haura runs in user space rather than kernel space.
-Also, haura uses a key-value and object interface rather than the usual POSIX interface.
-It can be used either directly by an application, in which case haura runs in the process context of the application, or
-use JULEA as a wrapper for haura.
-JULEA then runs the haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use.
+Unlike traditional file systems, Haura runs in user space rather than kernel space.
+Also, Haura uses a key-value and object interface rather than the usual POSIX interface.
+It can be used either directly by an application, in which case Haura runs in the process context of the application, or
+use JULEA as a wrapper for Haura.
+JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use.
 
-\todo[inline]{insert schemes from haura docu for better understanding}
-\todo[inline]{insert link to haura docu as source}
+\todo[inline]{insert schemes from Haura docu for better understanding}
+\todo[inline]{insert link to Haura docu as source}
 
-The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the haura stack
+The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
 achieved an improved write performance especially for small random write workloads and better sequential throughput.
 Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
 The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
 
 As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
-Haura is structured in layers as shown in figure \ref{fig:structure haura}.
+Haura is structured in layers as shown in figure \ref{fig:structure Haura}.
 
 \begin{figure}[ht]
 	\centering
 	\includegraphics[scale=0.4]{overview_haura_level.pdf}
-	\caption{Structure haura, from \cite{wiedemann2018modern}}
-		\label{fig:structure haura}
+	\caption{Structure Haura \cite{wiedemann2018modern}}
+		\label{fig:structure Haura}
 \end{figure}
-\todo[inline]{check were I have to put the source for the figure, in text or under the figure}
+
 
 
 At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\varepsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
@@ -349,6 +344,9 @@ For example, when a cache entry is modified, we need to write the data back to t
 
 
 \section{Cache Replacement Policies}
+
+-> introduction text needed
+
 \subsection{Optimal Cache Replacement Policy}
 The theoretically optimal cache replacement policy is Bélády's algorithm (also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
 This algorithm always evicts the cache entry whose next use is furthest in the future.
@@ -478,7 +476,7 @@ Usually $K = 2$ is chosen, for simplicity and better adaptability to different a
 The advantage of LRU-K is that it is better suited for loops and scanning access patterns.
 This is because cache entries that are referenced only once are removed from the cache more quickly than with LRU.
 However, LRU-K has the same major problem as LRU, which is the cost associated with using a priority queue.
-Any manipulation of the priority queue requires $O(\log(n)$ operations.
+Any manipulation of the priority queue requires $O(\log(n)$ operations \cite{10.1145/511399.511340}.
 
 The 2Q policy of \cite{shasha19942q} attempts to achieve the same performance as LRU-K, but without the $O(\log(n)$ complexity of using a priority queue.
 Instead of using just one queue, 2Q uses two queues.
@@ -505,9 +503,10 @@ We must therefore determine the correct $\lambda$ for each use case.
 Therefore, LRFU is also not suitable as a general cache replacement algorithm.
 
 \subsection{Detection and Adaption of Access Patterns}
+
 The third strategy is to identify specific access patterns in the history information for certain entries, based on either temporal or spatial locality, and treat these entries differently from the other entries.
 
-An example of this strategy is Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340}.
+An example of this strategy is Low inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340}.
 Instead of using recency directly like LRU, LIRS uses inter-reference recency (IRR), also called reuse distance.
 IRR refers to the number of other entries accessed between two consecutive references to a given entry.
 This allows the cache entries to be divided into either hot or cold entries.
@@ -628,7 +627,7 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 % Design and Implementation fehlen?! als Kapitel
 % 25-35%, ca 10-14 Seiten
 
-% see if I want to mention copy-on-write in background haura or somewhere else
+% see if I want to mention copy-on-write in background Haura or somewhere else
 
 -> need no chapter introduction
 
@@ -667,7 +666,7 @@ Thus, four states are possible unmodified, modified, in write back or incomplete
 If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
 The incomplete state can only be reached when an object is deserialized from disk.
-If the DMU encounter an incomplete object during runtime, haura panics and crashes.
+If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
 
 \newpage
 
@@ -758,30 +757,53 @@ So the cache size is a soft limit that can be temporarily exceeded, not a hard l
 is called before inserting so that the cache size is never exceeded.
 
 Furthermore, we have added the \texttt{get\_mut}()-function, listing \ref{lst:simplified Cache trait} line 5, 
-since the \texttt{get}()-function does not allow that the state of the cache changes.
+since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used to prevent the use of "\texttt{\&mut self}".
 But this is needed for the implementation of ML-CLOCK, which we will discuss in more detail in section \ref{sub:ml-clock}.
 
 \section{Implemented Cache Replacement Policies}
 \label{sec:implemented cache replacement policies}
 
--> need introduction text
+-> need introduction text\\
+-> CLOCK was already implemented\\
+-> why we use clock\\
+-> chosen because we follow the strategies in section improved cache replacement policies\\
+	1. Clock, LRU base case\\
+	2. GCLOCK, tracking deeper history information\\
+	3. CLOCK-Pro, detecting accesses pattern\\
+	4. ML-CLOCK, machine learning policy\\
+-> hash map used for all policies to speed up search time\\
 
 \subsection{CLOCK}
 
-Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for the Multics operating system.
-It is an approximation of the LRU (Least Recently Used) policy, but with a low runtime overhead, comparable to FIFO.
+Clock cache was introduced by F.J.Corbató \cite{corbato1968paging} for the Multics operating system and was originally intended 
+to use for the page replacement management for virtual memory.
+It is an approximation of the LRU (Least Recently Used) policy, but with a low runtime overhead.
 
-Unlike previous cache replacement algorithms, clock uses a circular list with a "hand" as a pointer to the current entry.
-Each cache entry has a reference bit initialized to 0.
-On a cache hit the reference bit for an entry is set to 1.
-On a cache miss, we need an entry for eviction.
-First, we look at the entry to which the hand is pointing. If the reference bit for this entry is 0, we have found the entry to be displaced.
-If the reference bit is 1, we set the reference to 0 and move the pointer to the next entry.
-These steps are repeated until we find an entry with an unset reference bit.
+Unlike previous cache replacement algorithms, clock uses a circular linked list with a "hand" as a pointer to the current entry.
+For our implementation in Haura we use a single linked circular list.
+The hand marks the head of the list and instead of moving the entries through a queue, like in LRU and LFU, the hand is moved.
+Also, each entry has a reference bit that is initially set to 0 and is set to 1 on a cache hit for that entry.
 
-\newpage
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.4]{clock.jpg}
+	\caption{Example for circular list in CLOCK.}
+		\label{fig:circular list for CLOCK}
+\end{figure}
+
+
+Listing \ref{lst:clock-algorithm} shows the steps during the request of an entry.
+% this doesn't sound right.
+To find an entry to evict, we look at the entry to which the hand is pointing.
+If the reference bit for this entry is 0, we have found the entry to be evicted.
+If the reference bit is 1, we set the reference bit to 0 and move the hand to the next entry.
+These steps are repeated until an entry is found whose reference bit is set to 0 and which can thus be evicted.
+New insert entries are placed behind the hand which represents the tail of the list, if we see the hand as the head of the list.
+
+\bigskip
+
 % should try to get listing on one page, better to understand that way
-\begin{lstlisting}[mathescape=true,caption=Clock replacement algorithm in pseudocode,label=lst:clock-algorithm]
+\begin{lstlisting}[mathescape=true,caption=CLOCK replacement algorithm in pseudocode,label=lst:clock-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
@@ -814,26 +836,37 @@ $\textcolor{ovgu-blue}{\texttt{end \ if}}$
 return entry 
 \end{lstlisting}
 
-Clock also remove the lock contention problem of LRU.
-For LRU each cache hit change the position of an entry in the LRU queue.
-So cache hit have to be serialized behind a lock to be used in a parallel system.
-Clock doesn't have this problem, because clock do not has to maintain an ordered queue.
+For our implementation in Haura, we additionally need to handle the case where the entry to be evicted is pinned and therefore cannot be cleared.
+When this case occurs, we spare the entry, increment the hand, and start the search for the next entry to be eviction from there.
 
-Due to its simplicity and good performance in most cases, the clock algorithm is widely used for example in Linux, Windows and NetBSD.
+The advantage of CLOCK is that it does not have the problem of lock contention during cache hits, as LRU and LFU do.
+This is because CLOCK does not have to maintain a priority queue and 
+the update of the reference bit can be done by atomic operations. 
+Therefore, no exclusive lock is required for a cache hit and 
+as a result, CLOCK is more scalable than LRU and LFU in terms of 
+the number of tasks accessing the cache.
 
- \todo[inline]{search for software which use clock as example with source}
+Since CLOCK is an LRU approximation, it also has the same disadvantage.
+The weaker performance on workloads with weak locality, like scanning and looping.
 
+\subsection{GCLOCK}
 
-\subsection{K-CLOCK}
-\todo[inline]{check if I should change the name to GCLOCK}
-Similar to normal clock algorithms but used a counter instead of just a bit for entry accesses.
-The variable k can be chosen usually k=2 gives best performance.
-Implemented in Haura with k=2.
-Described in \cite{corbato1968paging} as a variation of the original clock algorithm.
-K-Clock is similar to LRU-K as described in \cite{o1993lru} but clock-based not list-based.
-It has the advantage that frequently accessed entries have a chance to stay longer in cache and new entries can leave the cache fast, leads to better performance in scan workloads.
+%need to change in Haura source code
+The GCLOCK replacement policy \cite{smith1978sequentiality} is a generalization of CLOCK policy.
+However, the principle is already mentioned for the first time in \cite{corbato1968paging}.
+Like CLOCK, GCLOCK uses a circular linked list with one hand.
+But instead of only using on reference bit, a reference counter associated to each cache entry, is used.
+When a cache hit occurs, the reference counter is incremented up to $K$ times.
+The parameter $K$ can be chosen arbitrarily.
+Also, like CLOCK, to find an entry for eviction we look at the entry the hand points to.
+If the reference counter for this entry is 0, that entry is evicted.
+Otherwise, we decrement the reference counter and move the pointer to the next entry 
+until we find an entry with a reference counter of 0.
+The listing \ref{lst:gclock-algorithm} shows the steps during the request of an entry.
 
-\begin{lstlisting}[mathescape=true,caption=K-Clock replacement algorithm in pseudocode,label=lst:k-clock-algorithm]
+\bigskip
+
+\begin{lstlisting}[mathescape=true,caption=GCLOCK replacement algorithm in pseudocode,label=lst:gclock-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
@@ -867,16 +900,23 @@ $\textcolor{ovgu-blue}{\texttt{end \ if}}$
 return entry 
 \end{lstlisting}
 
-\subsection{CLOCK-PRO}
+When we choose $K = 0$, GCLOCK works like a FIFO policy.
+For $K = 1$, GCLOCK works as an approximation to the LRU policy and is the same as the CLOCK policy.
+Thus, CLOCK is a special case of the GCLOCK policy.
+If we choose $K > 1$, we get an approximation to the LFU policy, but with the addition of a built-in aging mechanism.
+This is because the reference counter is decremented when the hand passes an entry.
+For our implementation, we use $K = 2$ because \cite{corbato1968paging} has shown that this is a good trade off between performance and additional overhead.
 
-Although the clock algorithm performs well in a variety of use cases, problems arise with weakly localized access patterns, as described in \cite{jiang2005making}.
-Some problems include:
-\begin{itemize}
-	\item[1.] - access of many rarely used blocks can evict frequently used blocks for example in sequential scans
-	\item[2.] - a loop pattern which is slightly larger then the cache 
-	\item[3.] - in application with a B-tree index like databases, index blocks should be in cache but data blocks
-				evict index blocks because of the shorter access time
-\end{itemize}
+\subsection{CLOCK-Pro}
+
+%Although the clock algorithm performs well in a variety of use cases, problems arise with weakly localized access patterns, as described in \cite{jiang2005making}.
+%Some problems include:
+%\begin{itemize}
+%	\item[1.] - access of many rarely used blocks can evict frequently used blocks for example in sequential scans
+%	\item[2.] - a loop pattern which is slightly larger then the cache 
+%	\item[3.] - in application with a B-tree index like databases, index blocks should be in cache but data blocks
+%				evict index blocks because of the shorter access time
+%\end{itemize}
 % has been many alternative cache replacement algorithms LIRS is only one 
 % could also mention more
 % three categories of improvements
@@ -884,14 +924,79 @@ Some problems include:
 % 2. detecting the access patterns failing LRU and switch to an other effective replacement strategie
 % 3. using deeper history access information -> LIRS falls into this category
 
-These problems are general problems for LRU base replacement algorithms.
-An early attempt to overcome these problems was Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340} which uses the inter reference recency, the reuse distance, instead of last recency and divide the blocks in hot, with with low interreference recency and cold, with high inter-reference recency.
-Unlike LRU, LIRS attempts to keep the hot blocks in the cache and remove only the cold blocks, to overcome the weaknesses of LRU in cases of weak locality.
-To determine which blocks are hot or cold, LIRS also tracks metadata information for a set of cache blocks that are not resident in the cache.
-LIRS uses a stack that includes hot, cold, and non-resident cold blocks, and an additional list for only resident cold entries.
+%These problems are general problems for LRU base replacement algorithms.
+%An early attempt to overcome these problems was Low Inter-reference Recency Set (LIRS) \cite{10.1145/511399.511340} which uses the inter reference recency, the reuse distance, instead of last recency and divide the blocks in hot, with with low interreference recency and cold, with high inter-reference recency.
+%Unlike LRU, LIRS attempts to keep the hot blocks in the cache and remove only the cold blocks, to overcome the weaknesses of LRU in cases of weak locality.
+%To determine which blocks are hot or cold, LIRS also tracks metadata information for a set of cache blocks that are not resident in the cache.
+%LIRS uses a stack that includes hot, cold, and non-resident cold blocks, and an additional list for only resident cold entries.
+%
+%Clock-Pro algorithm \cite{jiang2005clock} combines the efficiency from clock with the performance improvements from LIRS.
+%To achieve a better performance clock-pro combines LIRS stack and list in one circular list ordered by the last access.
+%Hot blocks, with small recencies are at the head of the list and cold blocks with large recencies are at the tail of the list.
+%After a cold block is insert into the clock, it is in a test period.
+%If an access during this test period occurs, the cold block become a hot block.
+%On the other hand if the cold block is not re-access during its test period, it will be removed.
+%It is possible that during the test period that the cold block will be removed from memory and became non-resident, then the meta data still remains in the clock until the cold block runs out of his test period.
+%So a non-resident cold block can when a re-access occurs, become a hot block.
+%To generate free space only resident cold blocks are evicted.
+%
+%Clock-pro uses three handles instead of one like clock.
+%These three handles are used to determine the test-period and find an eviction candidate.
+%Since the test period, the threshold for an block to switch from cold to hot and also back from hot to cold is based on the distance between the handles the algorithm is adoptable and doesn't need a fixed threshold unlike other algorithms like CAR or 2Q.
+%
+%The hot-hand marks the tail of the list, which is the hot entry with the largest recency.
+%Any hot entry that would pass the hot hand is converted to a cold entry.
+%The cold-hand points to the last resident cold page and is used to find a replacement candidate for eviction.
+%The test-hand points to the last cold page in the test period. Any cold entry which passes this hand leaves the test period and any non-resident cold page in the test period that passes this pointer is removed from the clock.
+%
+%To make clock-pro adaptable the ratio for hot to cold entries is not fixed, unlike LIRS which has a fixed parameter for this.
+%It also influences if clock-pro behaves more like LRU and less like LIRS.
+%The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
+%If there are no hot entries clock-pro behaves like clock algorithm. 
+%However in case of where clock algorithm struggles, loop and scans, clock-pro can achieve better results.
+%
+%If there are many entries with a small reuse distance (hot entries) and only a few cold entries. A new cold entry is evicted relatively quickly, but since it is still in the testing phase, it can be re-entered as a hot entry after an early re-access.
+%Hot entries also need more time before they are evicted because they must transform into cold entries before they are evicted.
+%For every cold page accessed during its test period we increment the capacity for cold pages by 1 and for every cold page which passes his test period without access we decrement the capacity by 1.
+%This will also adjust the speed  for cold- and hot-hand.
+%
+%So clock-pro has the advantage of LRU in case of strong locality and better performance like LIRS in case of weak locality.
+%
+%
+%- problems with recursion
+%- show evict method 
+%- try to make evict method more understandable
 
-Clock-Pro algorithm \cite{jiang2005clock} combines the efficiency from clock with the performance improvements from LIRS.
-To achieve a better performance clock-pro combines LIRS stack and list in one circular list ordered by the last access.
+%--------------------------------------------------------------------------------------------------------------------------------
+
+
+
+The CLOCK-Pro cache replacement policy \cite{jiang2005clock} combines the efficiency from CLOCK policy with the performance improvements from LIRS 
+\cite{10.1145/511399.511340}.
+The basic idea of CLOCK-Pro is the same as LIRS, which is to categorize cache entries into hot and cold entries based on inter-reference recency.
+The hot entries always stays in cache and the cold entries allow a quick eviction of rarely accessed entries.
+Also, like LIRS, CLOCK-Pro uses non-resident cold entries to track history information.
+However, CLOCK-Pro, unlike LIRS, is customizable because it does not require a predefined parameter to control the number of hot and cold entries.
+
+To achieve better efficiency than LIRS, CLOCK-Pro combines the LRU priority queue and a FIFO queue of LIRS in a circularly linked list.
+And instead of using only one hand, as in CLOCK, three hands are used to provide the functions of LIRS, 
+as shown in \ref{fig:clock in clock-pro}.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.2]{clock_pro.png}
+	\caption{Example of the circular list for CLOCK-Pro. Hot entries marked with "H", cold entries with "C" and non-resident cold entries are shadowed.
+	The "$\sqrt{}$" marks referenced entries.}
+		\label{fig:clock in clock-pro}
+\end{figure}
+
+
+
+
+
+
+
+
 Hot blocks, with small recencies are at the head of the list and cold blocks with large recencies are at the tail of the list.
 After a cold block is insert into the clock, it is in a test period.
 If an access during this test period occurs, the cold block become a hot block.
@@ -900,27 +1005,12 @@ It is possible that during the test period that the cold block will be removed f
 So a non-resident cold block can when a re-access occurs, become a hot block.
 To generate free space only resident cold blocks are evicted.
 
-Clock-pro uses three handles instead of one like clock.
-These three handles are used to determine the test-period and find an eviction candidate.
-Since the test period, the threshold for an block to switch from cold to hot and also back from hot to cold is based on the distance between the handles the algorithm is adoptable and doesn't need a fixed threshold unlike other algorithms like CAR or 2Q.
 
-\todo[inline]{insert image for clock-pro layout}
-\begin{figure}[ht]
-	\centering
-	\includegraphics[scale=0.2]{clock_pro.png}
-	\caption{Figures show example of CLOCK-Pro. Hot entries marked with "H", cold entries with "C" and non-resident cold entries are shadowed.
-	The "$\sqrt{}$" marks referenced entries.}
-		\label{fig:clock in clock-pro}
-\end{figure}
 
-The hot-hand marks the tail of the list, which is the hot entry with the largest recency.
-Any hot entry that would pass the hot hand is converted to a cold entry.
-The cold-hand points to the last resident cold page and is used to find a replacement candidate for eviction.
-The test-hand points to the last cold page in the test period. Any cold entry which passes this hand leaves the test period and any non-resident cold page in the test period that passes this pointer is removed from the clock.
 
-\todo[inline]{make a diagram to show finding of eviction candidate}
-\todo[inline]{decide if I want to use block, page or entry, shouldn't mix them up}
-\newpage
+
+\bigskip
+
 \begin{lstlisting}[mathescape=true,caption=Clock-pro replacement algorithm in pseudocode,label=lst:clock-pro-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
@@ -991,25 +1081,7 @@ else
 $\textcolor{ovgu-blue}{\texttt{end \ if}}$	
 return entry 
 \end{lstlisting}
-\todo[inline]{maybe divide in two parts, eviction in own listing, it could be a bit long}
 
-To make clock-pro adaptable the ratio for hot to cold entries is not fixed, unlike LIRS which has a fixed parameter for this.
-It also influences if clock-pro behaves more like LRU and less like LIRS.
-The cold-hand behaves like the hand in clock, unsetting reference bit and find eviction candidate.
-If there are no hot entries clock-pro behaves like clock algorithm. 
-However in case of where clock algorithm struggles, loop and scans, clock-pro can achieve better results.
-
-If there are many entries with a small reuse distance (hot entries) and only a few cold entries. A new cold entry is evicted relatively quickly, but since it is still in the testing phase, it can be re-entered as a hot entry after an early re-access.
-Hot entries also need more time before they are evicted because they must transform into cold entries before they are evicted.
-For every cold page accessed during its test period we increment the capacity for cold pages by 1 and for every cold page which passes his test period without access we decrement the capacity by 1.
-This will also adjust the speed  for cold- and hot-hand.
-
-So clock-pro has the advantage of LRU in case of strong locality and better performance like LIRS in case of weak locality.
-
-
-- problems with recursion
-- show evict method 
-- try to make evict method more understandable
 
 \subsection{ML-CLOCK}
 \label{sub:ml-clock}
@@ -1148,8 +1220,8 @@ return entry
 - lock needed for get function because entry can change clock
 
 \section{Usage}
-- code changes for compilation of haura with different cache\\
-- how to compile haura with different cache implementation \\
+- code changes for compilation of Haura with different cache\\
+- how to compile Haura with different cache implementation \\
 %To implement different cache policies we need to modify src/database/mod.rs.
 %Because there the DMU will be created.
 %Used conditional compilation see Cargo.toml to build with different cache default is CLOCK.
@@ -1175,7 +1247,7 @@ return entry
 
 - used ovgu cluster
 - software version 
-- haura config json
+- Haura config json
 
 
 \section{Methodology}
