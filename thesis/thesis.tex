@@ -150,7 +150,7 @@ Johannes Wünsche
 % es wird auch kurz dargestellt wie vorgeganngen wurde
 % der Aufbau der Arbeit wird kurz vorgestellt
 
-% 5%-19% 2-4
+% 5%-19% 2-4 Seiten
 
 % possible structure
 \section{Memory Hierarchy}
@@ -1138,16 +1138,49 @@ If it then occurs that the entry is pinned, the entry is again insert into the c
 The last cache replacement policy implemented is ML-CLOCK by \cite{cho2021ml} and 
 follows the recent trend of incorporating machine learning techniques.
 The idea for ML-CLOCK is to use recency and frequency information for eviction.
-In order to achieve adaptability, we cannot use a fixed weighting parameter as we have seen with LRFU. 
+In order to achieve adaptability, we cannot use a fixed weighting parameter as we have seen with LRFU \cite{lee2001lrfu}. 
 If the weighting parameter is fixed, we cannot adapt to the access pattern.
+So instead of using a fixed parameter to decide what is more important, recency 
+or frequency,
+ML-CLOCK learns the weighting parameter from previous decisions and is therefore adaptive.
+
+In addition, ML-CLOCK is designed to minimize writes to the underlying storage devices.
+The motivation for this is that write operations take more time than read operations.
+Also, some memory types like flash memory, can only write in blocks.
+This means that it is better to group writes into adjacent blocks rather than scattering many small writes across a memory device, since even a small write requires changing an entire block.
+
+ML-CLOCK uses single-layer perceptron(SLP).
+SLP is a binary classifier, in our case predicts if an entry should be evicted or 
+not.
+The advantages of SLP compared to more advanced machine learning techniques, such 
+as multi-layer perceptrons or long short-term memory networks, are that
+SLP has lower time and space overhead which makes it more suitable for online  
+learning and the robustness against overfitting.  
+
+In contrast to the other implemented cache replacement policies,
+ML-CLOCK uses two circular linked lists.
+One for the clean, unmodified cache entries
+and a second clock for the dirty, modified cache entries, which is also sorted by 
+the logical block address for each entry.
+We refer to the first circular list as clean-clock and the second circular list as 
+dirty-clock.
+Both circular list have one hand, the c-hand for the clean-clock and 
+the d-hand for the dirty-clock.
+If the d-hand move to the next entry, it moves the next entry 
+which has the next closest address in the dirty clock.
+This is done to ensure that sequential blocks are written if possible.
+Furthermore, we use a ghost queue which saves the metadata of evicted entries and 
+is used to train the SLP.
+For each entry we have a reference bit, a reference counter and a time stamp of the 
+last accesses as metadata. 
 
 
-But instead of using a fixed parameter to decide which is more important, like LRFU or using a heuristic like ARC or CLOCK-Pro,
-ML-CLOCK learns the parameter to weight between recency and frequency from previous decisions.
 
 
 
-\newpage
+
+\bigskip
+
 \begin{lstlisting}[mathescape=true,caption=K-Clock replacement algorithm in pseudocode,label=lst:ml-clock-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
@@ -1250,94 +1283,113 @@ return entry
 
 \subsection{Single threaded}
 
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{randread_zipf.jpg}		
-	\caption{Random, 100\% read, zipf-distribution}
-	\label{fig:randread zipf}
-\end{figure}
-	
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{randread_normal.jpg}		
-	\caption{Random, 100\% read, normal-distribution}
-	\label{fig:randread normal}
-\end{figure}
-	
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{randread_zoned.jpg}		
-	\caption{Random, 100\% read, zoned-distribution}
-	\label{fig:randread zoned}
-\end{figure}
 
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{randread_uniform.jpg}		
-	\caption{Random, 100\% read, uniform-distribution}
-	\label{fig:randread uniform}
-\end{figure}
-
-%-------------------------------------------------------
-
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_90to10_zipf.jpg}		
-	\caption{Random, 90\% read, 10\% write, zipf-distribution}
-	\label{fig:rw_90to10 zipf}
-\end{figure}
-	
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_90to10_normal.jpg}		
-	\caption{Random, 90\% read, 10\% write, normal-distribution}
-	\label{fig:rw_90to10 normal}
-\end{figure}
-	
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_90to10_zoned.jpg}		
-	\caption{Random, 90\% read, 10\% write, zoned-distribution}
-	\label{fig:rw_90to10 zoned}
-\end{figure}
-
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_90to10_uniform.jpg}		
-	\caption{Random, 90\% read, 10\% write, uniform-distribution}
-	\label{fig:rw_90to10 uniform}
+\begin{figure}
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{randread_zipf.jpg}		
+		\caption{Zipf-distribution}
+		\label{fig:randread zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{randread_normal.jpg}		
+		\caption{Normal-distribution}
+		\label{fig:randread normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{randread_zoned.jpg}		
+		\caption{Zoned-distribution}
+		\label{fig:randread zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{randread_uniform.jpg}		
+		\caption{Uniform-distribution}
+		\label{fig:randread uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random read-only workloads with different 				random distributions.}
 \end{figure}
 
 %-------------------------------------------------------
 
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_50to50_zipf.jpg}		
-	\caption{Random, 50\% read, 50\% write, zipf-distribution}
-	\label{fig:rw_90to10 zipf}
-\end{figure}
-	
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_50to50_normal.jpg}		
-	\caption{Random, 50\% read, 50\% write, normal-distribution}
-	\label{fig:rw_90to10 normal}
-\end{figure}
-	
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_50to50_zoned.jpg}		
-	\caption{Random, 50\% read, 50\% write, zoned-distribution}
-	\label{fig:rw_90to10 zoned}
-\end{figure}
-
-\begin{figure}[ht]
-	\includegraphics[scale=0.45]{rw_50to50_uniform.jpg}		
-	\caption{Random, 50\% read, 50\% write, uniform-distribution}
-	\label{fig:rw_90to10 uniform}
+\begin{figure}
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_90to10_zipf.jpg}		
+		\caption{Zipf-distribution}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_90to10_normal.jpg}		
+		\caption{Normal-distribution}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_90to10_zoned.jpg}		
+		\caption{Zoned-distribution}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_90to10_uniform.jpg}		
+		\caption{Uniform-distribution}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 90\% read 10\% write workloads with different random distributions.}
 \end{figure}
 
 %-------------------------------------------------------
 
+\begin{figure}
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_50to50_zipf.jpg}		
+		\caption{Zipf-distribution}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_50to50_normal.jpg}		
+		\caption{Normal-distribution}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_50to50_zoned.jpg}		
+		\caption{Zoned-distribution}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{rw_50to50_uniform.jpg}		
+		\caption{Uniform-distribution}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 50\% read 50\% write workloads with different random distributions.}
+\end{figure}
+
+%-------------------------------------------------------
+
+% not sure if I want to use this, don't have seq write for multi-threaded
 \begin{figure}[ht]
+	\centering
 	\includegraphics[scale=0.45]{seq_write.jpg}		
-	\caption{Sequential, 100\% write}
+	\caption{This figure show the hit-rate file-size diagram for each implemented 		cache replacement policy for sequential writes}
 	\label{fig:seq write}
 \end{figure}
 	
 
 \subsection{Multi threaded}
 
+-> coming soon
+
 \section{Summary}
+
+-> coming soon
 
 \chapter{Conclusion}
 \label{cha:conclusion}
