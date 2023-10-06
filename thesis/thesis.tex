@@ -760,8 +760,9 @@ So the cache size is a soft limit that can be temporarily exceeded, not a hard l
 is called before inserting so that the cache size is never exceeded.
 
 Furthermore, we have added the \texttt{get\_mut}()-function, listing \ref{lst:simplified Cache trait} line 5, 
-since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used to prevent the use of "\texttt{\&mut self}".
-But this is needed for the implementation of ML-CLOCK, which we will discuss in more detail in section \ref{sub:ml-clock}.
+since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used and thus a read-lock is sufficient.
+But for ML-CLOCK it is needed to change the cache and atomic operations cannot be used.
+Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive write-lock.
 
 \section{Implemented Cache Replacement Policies}
 \label{sec:implemented cache replacement policies}
@@ -968,7 +969,7 @@ What we see is that all hands work together to find an entry for eviction, listi
 % better to use newpage in final version to avoid that the listing spans over 3 pages
 %\newpage
 
-\begin{lstlisting}[mathescape=true,caption=Clock-pro replacement algorithm in pseudocode,label=lst:clock-pro-algorithm]
+\begin{lstlisting}[mathescape=true,caption=CLOCK-Pro replacement algorithm in pseudocode,label=lst:clock-pro-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
@@ -1055,7 +1056,7 @@ The small $m_C$ leads to a quicker eviction of newly inserted entries and the en
 chance to stay in cache. Thus, in theory, CLOCK-Pro has the advantage of LRU for workloads with strong locality and 
 the advantages of LIRS for workloads with weak locality.
 
-For our implementation in Haura, we have to modify the CLOCK-Pro, due to the fact that the DMU manages the cache.
+In our implementation in Haura, we have to modify the CLOCK-Pro, due to the fact that the DMU manages the cache.
 So we can not turn non-resident cold entries to hot entries, which are always resident.
 Because this would imply that the cache tells the DMU what to do and not the other way around.
 
@@ -1067,73 +1068,6 @@ If it then occurs that the entry is pinned, the entry is again insert into the c
 
 \subsection{ML-CLOCK}
 \label{sub:ml-clock}
-%- newest algorithm of this three\\
-%- based on single layer perceptron and online learning \\
-%- also uses clock approach for efficient access compared to list based\\
-%- also tries to minimize write back of entries\\
-%- categorizes entries in clean (unchanged) and dirty (modified) entries\\
-%- also tries to optimize write back by sort dirty entries by address in storage not by time \\
-%- dirty entries can get second chance based on prediction by perceptron\\
-%- perceptron lerns if LRU or LFU is more important \\
-
-%ML-clock \cite{cho2021ml} follows the recent trend to incorporate machine learning techniques.
-%what let ML-clock stand out is that it uses single-layer perceptron (SLP) which is a relatively simple ml technique.
-%But this allows the use of online learning instead of batch training which is used for neural networks and gives better adaptability.
-%It uses SLP to learn if it should behave more like LRU or LFU and incorporate learned I/O patterns.
-%Also ML-clock tries to minimize write operation and prioritize the eviction of clean entries instead of dirty entries.
-%
-%ML-clock tries to reduce the number of access to the underlying storage media and incorporate machine learning techniques.
-%It starts with clock algorithm as basis. 
-%Unlike clock, ML-clock uses two hands.
-%Clean-hand to find eviction candidates which have not been modified and dirty-hand to find a modified eviction candidate.
-%
-%To train the SLP we need to track the reference bit, reference count, and a timestamp for last access for every entry.
-%The reference bit is used just like in clock.
-%Reference count is to track the frequency of access and the timestamp for the recency.
-%SLP is used to decide which policies under the given circumstances is more suited.
-%
-%To predict if an entry will be evicted the following equation is used.
-%The variables $w_d, w_c$ and $w_b$ represents the weight for reuse-distance, reference count and the bias.
-%The variables $x_d$ and $x_c$ represents the input values for reuse-distance and the reference count.
-%
-%prediction: \\
-%\begin{align}
-%	f_{predict} (x_d, x_c) =
-%	\begin{cases}
-%		0, \quad x_d \cdot w_d + x_c \cdot w_c + 1 \cdot w_b < 0 \\
-%		1, \quad x_d \cdot w_d + x_c \cdot w_c + 1 \cdot w_b \geq 0
-%	\end{cases}
-%\end{align}
-%
-%The variable $x_d$ must be reduced so that it has the same order of magnitude as $x_c$.
-%A prediction is triggered to find a victim page for eviction or to decide if a learning operation is triggered.
-%
-%scaling of $x_d$:
-%\begin{align}
-%	x_d = \frac{current \  timestamp - timestamp \  of \  the \  last \  access}{size \  of \  circular \  list}
-%\end{align}
-%	
-%The variable $lr$ is the learning rate and controls how much the model change each epoch.
-%The equations below are used to train the new weights.
-%The learning operation is used to update the weights.
-%
-%learning:
-%\begin{align}
-%\begin{split}
-%	w_d \leftarrow w_d + lr \cdot x_d \cdot (v_{expect} - v_{predict})\\
-%	w_c \leftarrow w_c + lr \cdot x_c \cdot (v_{expect} - v_{predict})\\
-%	w_b \leftarrow w_b + lr \cdot x_b \cdot (v_{expect} - v_{predict})
-%\end{split}
-%\end{align}
-%
-%The variable $v_{predict}$ is the result of the prediction equations for a possible victim and 
-%$v_{expect}$ is the correct answer for this prediction.
-%The term $(v_{expect} - v_{predict})$ defines if the weights are updated or not.
-%
-%In addition, ml-clock uses a ghost queue to store the metadata for eliminated entries in order to learn the weights.
-%The ghost queue can hold at most the same number of entries as the circular list.
-%Each time a new entry is added to the ghost queue and the ghost queue is full, a learning operation is triggered.
-%Useful because every evicted entries can be used to calibrate the SLP.
 
 The last cache replacement policy implemented is ML-CLOCK by \cite{cho2021ml} and 
 follows the recent trend of incorporating machine learning techniques.
@@ -1147,41 +1081,75 @@ ML-CLOCK learns the weighting parameter from previous decisions and is therefore
 In addition, ML-CLOCK is designed to minimize writes to the underlying storage devices.
 The motivation for this is that write operations take more time than read operations.
 Also, some memory types like flash memory, can only write in blocks.
-This means that it is better to group writes into adjacent blocks rather than scattering many small writes across a memory device, since even a small write requires changing an entire block.
+Thus we can minimize write operations, if we manage to write back adjacent data blocks, 
+instead of writing back data scattered across a storage device.
 
-ML-CLOCK uses single-layer perceptron(SLP).
-SLP is a binary classifier, in our case predicts if an entry should be evicted or 
-not.
-The advantages of SLP compared to more advanced machine learning techniques, such 
-as multi-layer perceptrons or long short-term memory networks, are that
-SLP has lower time and space overhead which makes it more suitable for online  
-learning and the robustness against overfitting.  
-
-In contrast to the other implemented cache replacement policies,
-ML-CLOCK uses two circular linked lists.
-One for the clean, unmodified cache entries
-and a second clock for the dirty, modified cache entries, which is also sorted by 
-the logical block address for each entry.
-We refer to the first circular list as clean-clock and the second circular list as 
-dirty-clock.
-Both circular list have one hand, the c-hand for the clean-clock and 
-the d-hand for the dirty-clock.
-If the d-hand move to the next entry, it moves the next entry 
-which has the next closest address in the dirty clock.
-This is done to ensure that sequential blocks are written if possible.
-Furthermore, we use a ghost queue which saves the metadata of evicted entries and 
-is used to train the SLP.
 For each entry we have a reference bit, a reference counter and a time stamp of the 
 last accesses as metadata. 
+Also the entries are categorized in clean (unmodified) entries and dirty (modified) entries.
+And in contrast to the other implemented cache replacement policies,
+ML-CLOCK uses two circular linked lists.
+One for the clean entries which we refer to as clean-clock 
+and a second for the dirty entries which we will refer to as dirty-clock
+which is also sorted by the logical block address for each entry.
+Both circular list have one hand, the c-hand for the clean-clock and 
+the d-hand for the dirty-clock.
+When the d-hand move to the next entry, it moves the next entry 
+which has the closest address in the dirty clock.
+This ensures that sequential blocks are written back, if possible.
+Furthermore, we use a ghost queue which saves the metadata of evicted entries and 
+is used to train the SLP.
+At most the ghost queue can store as many entries as the cache, clean-clock and dirty-clock together.
+
+ML-CLOCK uses a single-layer perceptron(SLP).
+SLP is a binary classifier, which in our case predicts whether an entry should be evicted or not.
+One advantage of SLP compared to more advanced machine learning techniques, such 
+as multi-layer perceptrons or long short-term memory networks, is that
+SLP has low time and space overhead,
+making it more suitable for online learning.
+Furthermore, SLP are not prone to overfitting.
+
+To predict if an entry will be evicted the following equation \ref{prediction} is used,\\
+where $w_d, w_c$ and $w_b$ represents the weight for reuse-distance, reference count and the bias.
+The variables $x_d$ and $x_c$ represents the metadata values from the entry reuse-distance and the reference count.
+
+\begin{align}
+	f_{predict} (x_d, x_c) =
+	\begin{cases}
+		0, \quad x_d \cdot w_d + x_c \cdot w_c + 1 \cdot w_b < 0 \\
+		1, \quad x_d \cdot w_d + x_c \cdot w_c + 1 \cdot w_b \geq 0 \label{prediction}
+	\end{cases}
+\end{align}
+
+Also, $x_d$ must be scaled down so that it has the same order of magnitude as $x_c$, as shown in equation \ref{reduction}.
+
+\begin{align}
+	x_d = \frac{\emph{current timestamp} - \emph{timestamp of the last access}}{\emph{number of all entries in cache}} \label{reduction}
+\end{align}
+	
+In addition to learning the weights $w_d, w_c$ and $w_b$, the equation \ref{learning} is used.
+
+\begin{align}
+\begin{split}
+	w_d \leftarrow w_d + lr \cdot x_d \cdot (v_{expect} - v_{predict})\\
+	w_c \leftarrow w_c + lr \cdot x_c \cdot (v_{expect} - v_{predict})\\
+	w_b \leftarrow w_b + lr \cdot x_b \cdot (v_{expect} - v_{predict})\\
+\end{split} \label{learning}
+\end{align}
+
+The learning rate $lr$ controls how much the weights changes during training.
+The variable $v_{predict}$ is the result of an prediction, equation \ref{prediction}, for an entry and 
+$v_{expect}$ is the correct answer for this prediction, as we see in listing \ref{lst:clock-algorithm}.
+Both $v_{predict}$ and $v_{expect}$ can either be 1 or 0.
+Thus, the term $(v_{expect} - v_{predict})$ defines if the weights are updated or not.
 
 
-
-
-
+Listing \ref{lst:clock-algorithm} shows the steps during the request of an entry and also shows when 
+the prediction and the learning take place.
 
 \bigskip
 
-\begin{lstlisting}[mathescape=true,caption=K-Clock replacement algorithm in pseudocode,label=lst:ml-clock-algorithm]
+\begin{lstlisting}[mathescape=true,caption={ML-CLOCK replacement algorithm in pseudocode, slightly modified from \cite{jiang2005clock}},label=lst:ml-clock-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	hand: hand is the entry the clock hand is pointing to
@@ -1189,7 +1157,9 @@ $\textcolor{ovgu-blue}{Input}$
 	GhostQ: Ghost Queue
 
 if Clk.contains(entry) == true $\textcolor{ovgu-blue}{then}$
+	updateMetadata(entry)
 	// trigger learning operation
+	// second parameter for learning() is $\textcolor{gray}{v_{expect}}$
 	learning(entry, 1)
 	return entry
 else
@@ -1204,11 +1174,13 @@ else
 		// check if victim is in ghost queue
 		if GhostQ.findPage(victim) == true $\textcolor{ovgu-blue}{then}$
 			// ready to promote a entry to clock
+			// second parameter for learning() is $\textcolor{gray}{v_{expect}}$
 			learning(entry, 1)
 			GhostQ.deleteEntry(victim)
 		else
 			if GhostQ.isFull() == true $\textcolor{ovgu-blue}{then}$
 				// evict a page on ghost queue with learning
+				// second parameter for learning() is $\textcolor{gray}{v_{expect}}$
 				learning(GhostQ.tail, 0)
 				GhostQ.deleteEntry(GhostQ.tail)
 			$\textcolor{ovgu-blue}{end \ if}$
@@ -1222,12 +1194,30 @@ $\textcolor{ovgu-blue}{end \ if}$
 return entry 
 \end{lstlisting}
 
+On a cache hit, we update the metadata for the entry and start a learning operation.
+We set $v_{expect}$ to 1, because the requested entry is contained in cache.
+Then we use the metadata of the entry to make a prediction, equation \ref{prediction}, and get $v_{predict}$.
+The weights are updated or not based on $v_{expect}$ and $v_{predict}$.
+In addition, a cache hit may cause a clean entry to become a dirty entry.
+Therefore, the entry is moved from the clean-clock to the dirty-clock.
+For this case, we added the \texttt{get\_mut}()-function to the Cache trait.
+% could be insert chapter for cache trait.
+
+To find a entry for eviction during a cache miss, 
+we search for eviction candidates in both clocks.
+Like the hand in CLOCK, the c-hand and d-hand search for an entry with the reference bit set to 0.
+So there are two eviction candidates, the c-candidate from the clean-clock and the d-candidate from the dirty-clock.
+The next step is to apply the prediction operation to both candidates and to decide which candidate to evict the preference 
+rules in table \ref{tab:ml-clock preference rules} will be used.
+Since the goal is to minimize write operations, in 3 out of 4 possible cases the c-candidate is removed and not the d-candidate.
+
+
 \begin{table}[ht]
 	\centering
 	\begin{tabular}{|c|c|c|}
 		\hline
 		\textbf{Predicted Value} & \textbf{Predicted Value} & \textbf{Victim Entry} \\
-		\textbf{(C-Candidate)} & \textbf{(D-Candidate)} & \\
+		\textbf{(c-candidate)} & \textbf{(d-candidate)} & \\
 		\hline
 		0 & 0 & C-Candidate \\
 		\hline
@@ -1243,8 +1233,21 @@ return entry
 \end{table}
 \todo[inline]{insert source}
 
-- two separated clocks one for clean entries one for dirty and also order by block address \\
-- lock needed for get function because entry can change clock
+When the entry to evict was found,
+it is checked whether this entry is already in the ghost queue.
+If this is the case, a learning operation is triggered and this entry will be evicted from the ghost queue.
+In our implementation, we do not reinsert the entry into the cache, for the same reason as in CLOCK-Pro, the DMU
+manages which entries are inserted into the cache.
+
+In case the entry for eviction is not already in the ghost queue, it will be insert into the ghost queue.
+An learning operation is triggered if the ghost queue exceeds it capacity.
+
+So there are three possibilities to trigger a learning operation during a cache hit, 
+if the entry for eviction is already in the ghost queue or
+if a entry must leave the ghost queue if .
+
+The case that the entry for eviction is pinned can be handled the same way as in CLOCK and GCLOCK, simple leave the pinned entry in the clock and continue the search at the next entry.
+
 
 \section{Summary}
 
@@ -1283,7 +1286,7 @@ return entry
 
 \subsection{Single threaded}
 
-
+\todo[inline]{change GB to GiB}
 \begin{figure}
 	\centering
 	\begin{subfigure}{0.4\textwidth}
