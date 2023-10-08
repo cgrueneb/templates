@@ -31,6 +31,9 @@
 % inserted for better handling of references
 %\usepackage{natbib}
 % ---------
+% insert for positioning of figures
+\usepackage{float}
+% ---------
 \usepackage{microtype}
 \usepackage{subcaption}
 % Required for listings's upquote
@@ -181,115 +184,8 @@ The goal of the memory hierarchy is to develop systems that have enough fast mem
 \end{figure}
 \todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
 
-
-
-\section{Contribution}
-% check if contribution or contributions is right
-- new is direct comparison of clock based cache replacement algorithms\\
-
-\section{Outline}
-- description of the structure of the following work\\
-
-% 5-10%, ca. 2-5 Seiten 
-
-\chapter{Background}
-\label{cha:background}
-
-% darstellen der nötigen Informationen und Arbeiten um die weitere Arbeit verstehen zu können
-% nicht zu weit ausschweifen
-% 10-20%, ca. 4-10 Seiten
-
-- next chapter gives a short overview of topics necessary to understand the following work\\
-
-\section{$B^{\varepsilon}$-tree}
-
-% own section for $B^{\varepsilon}$-tree
-%The $B^{\varepsilon}$-tree is a write-optimized version of the B-tree, which are widely used for filesystems or databases, with better performance for insert, range queries and key-value updates \cite{bender2015introduction}.
-%Unlike the B-tree, the $B^{\varepsilon}$-tree has a buffer for each node, where changes to the subtree associated with the node are stored and
-%only when the buffer overflows, the changes are written to the nodes of the subtree, which reduces the number of write operations and the data fragmantation.
-
-The idea for the $B^{\varepsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the trade off between insertions and queries for comparison-based external memory dictionaries.
-
-The basis for $B^{\varepsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
-because the entire node must be updated for each small write.
-However, if we reduce the node size to optimize for small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
-
-To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown in figure \ref{fig:structure B-epsilon-tree}.
-
-\begin{figure}[ht]
-	\centering
-	\includegraphics[scale=0.6]{B-epsilon_structure.png}
-	\caption{Structure $B^{\varepsilon}$-tree from \cite{bender2015introduction}}
-		\label{fig:structure B-epsilon-tree}
-\end{figure}
-
-As new data is inserted into the $B^{\varepsilon}$-tree, the data is written to the buffer of the root node as "insert message".
-Only when the root node's buffer is full, a batch of messages is flushed down the tree, preferably to the node with the most pending messages. 
-If a node needs to be split, the buffer is also split between the new nodes.
-When the insert message arrives at a leaf node, the data is added to the leaf.
-
-This behavior leads to better insertion performance than B-trees, since insertion always occurs at the root, no searching for the correct insertion point is required, and  
-the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
-On deletion a "tombstone message" will be insert into the tree and will be flushed down the tree to a leaf, like an insertion message.
-
-For queries, in the $B^{\varepsilon}$-tree, we also need to check buffer on the way to the leaf nodes to see if there are any relevant messages.
-These messages must be processed, but that does not mean they are flushed down immediately, this can happen later.
-
-So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
-\todo[inline]{write a bit more detailed about this}
-
-
-\section{Haura}
-
-Haura is a research storage stack written primarily in Rust.
-Unlike traditional file systems, Haura runs in user space rather than kernel space.
-Also, Haura uses a key-value and object interface rather than the usual POSIX interface.
-It can be used either directly by an application, in which case Haura runs in the process context of the application, or
-use JULEA as a wrapper for Haura.
-JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use.
-
-\todo[inline]{insert schemes from Haura docu for better understanding}
-\todo[inline]{insert link to Haura docu as source}
-
-The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
-achieved an improved write performance especially for small random write workloads and better sequential throughput.
-Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
-The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
-
-As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
-Haura is structured in layers as shown in figure \ref{fig:structure Haura}.
-
-\begin{figure}[ht]
-	\centering
-	\includegraphics[scale=0.4]{overview_haura_level.pdf}
-	\caption{Structure Haura \cite{wiedemann2018modern}}
-		\label{fig:structure Haura}
-\end{figure}
-
-
-
-At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\varepsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
-
-The next layer, the \emph{Tree Layer} manages the $B^{\varepsilon}$-trees.
-The \emph{database layer} sends messages to the $B^{\varepsilon}$ trees consisting of key-value or key-message pairs that the $B^{\varepsilon}$ trees process. A message for key-message pair can contain arbitrary data or apply arbitrary code on data.
-Key-value pairs are stored in leave nodes and key-message nodes are stored in inner nodes of the tree.
-Each node is an object for the \emph{Data Management Layer} and is tracked individually.
-
-The \emph{Data Management Layer}(DML) manages objects for the \emph{Tree Layer} and \emph{database layer} which means cache objects in memory, 
-track modifications to objects and write-back modified objects.
-Main part of the DML is the Data Management Unit (DMU).
-The DMU is shared by all trees and ensures that no irregular state can be reached.
-It takes care of critical disk management such as block allocation.
-In addition, the DMU manages the cache, which is the main topic of this work.
-
-The \emph{Storage Pool Layer} is an abstraction over the used storage hardware.
-Furthermore the storage is divided in to tiers from \emph{Fastest}, \emph{Fast}, \emph{Slow} to \emph{Slowest}.
-The user can decide how the used hardware falls into these tiers. Also, not all tiers need to be used.
-
-The last layer, the \emph{Vdev Layer}, is responsible for actually reading and writing data from the disks.
-Single disk, multiple disks or RAID-like configurations can be used.
-
 \section{Caching}
+\label{sec:caching}
 %Due to the use of a memory hierarchy, caching is used in several places, as shown in table \ref{tab:caching hierarchy} and can either be handle in hardware like the L1 and L2 cache of a cpu-core, in software like a web cache or a combination of both.
 
 Closely related to the memory hierarchy is caching.
@@ -345,10 +241,128 @@ Each extra copy and move of data consumes additional power.
 And on the other hand, if we have redundant data, there is an additional effort to keep the data consistent.
 For example, when a cache entry is modified, we need to write the data back to the original location, and we need to prevent multiple tasks from writing to a cache entry at the same time.
 
+\section{Hierarchical Storage Management}
+
+- coming soon
+
+\section{Contribution}
+% check if contribution or contributions is right
+- new is direct comparison of clock based cache replacement algorithms\\
+
+\section{Outline}
+- description of the structure of the following work\\
+
+% 5-10%, ca. 2-5 Seiten 
+
+\chapter{Background}
+\label{cha:background}
+
+% darstellen der nötigen Informationen und Arbeiten um die weitere Arbeit verstehen zu können
+% nicht zu weit ausschweifen
+% 10-20%, ca. 4-10 Seiten
+
+- next chapter gives a short overview of topics necessary to understand the following work\\
+- \ref{caching}
+
+\section{$B^{\varepsilon}$-tree}
+\label{sec:tree}
+
+% own section for $B^{\varepsilon}$-tree
+%The $B^{\varepsilon}$-tree is a write-optimized version of the B-tree, which are widely used for filesystems or databases, with better performance for insert, range queries and key-value updates \cite{bender2015introduction}.
+%Unlike the B-tree, the $B^{\varepsilon}$-tree has a buffer for each node, where changes to the subtree associated with the node are stored and
+%only when the buffer overflows, the changes are written to the nodes of the subtree, which reduces the number of write operations and the data fragmantation.
+
+The idea for the $B^{\varepsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the trade off between insertions and queries for comparison-based external memory dictionaries.
+
+The basis for $B^{\varepsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
+because the entire node must be updated for each small write.
+However, if we reduce the node size to optimize for small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
+
+To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown in figure \ref{fig:structure B-epsilon-tree}.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.6]{B-epsilon_structure.png}
+	\caption{Structure $B^{\varepsilon}$-tree from \cite{bender2015introduction}}
+		\label{fig:structure B-epsilon-tree}
+\end{figure}
+
+As new data is inserted into the $B^{\varepsilon}$-tree, the data is written to the buffer of the root node as "insert message".
+Only when the root node's buffer is full, a batch of messages is flushed down the tree, preferably to the node with the most pending messages. 
+If a node needs to be split, the buffer is also split between the new nodes.
+When the insert message arrives at a leaf node, the data is added to the leaf.
+
+This behavior leads to better insertion performance than B-trees, since insertion always occurs at the root, no searching for the correct insertion point is required, and  
+the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
+On deletion a "tombstone message" will be insert into the tree and will be flushed down the tree to a leaf, like an insertion message.
+
+For queries, in the $B^{\varepsilon}$-tree, we also need to check buffer on the way to the leaf nodes to see if there are any relevant messages.
+These messages must be processed, but that does not mean they are flushed down immediately, this can happen later.
+
+So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
+\todo[inline]{write a bit more detailed about this}
+
+\section{Copy on Write}
+\label{sec:copy on write}
+
+- should be mentioned because it important part of haura and $B^{\varepsilon}$-tree
+
+\section{Haura}
+\label{sec:haura}
+
+Haura is a research storage stack written primarily in Rust.
+Unlike traditional file systems, Haura runs in user space rather than kernel space.
+Also, Haura uses a key-value and object interface rather than the usual POSIX interface.
+It can be used either directly by an application, in which case Haura runs in the process context of the application, or
+use JULEA as a wrapper for Haura.
+JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use.
+
+\todo[inline]{insert schemes from Haura docu for better understanding}
+\todo[inline]{insert link to Haura docu as source}
+
+The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
+achieved an improved write performance especially for small random write workloads and better sequential throughput.
+Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
+The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
+
+As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
+Haura is structured in layers as shown in figure \ref{fig:structure Haura}.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[scale=0.4]{overview_haura_level.pdf}
+	\caption{Structure Haura \cite{wiedemann2018modern}}
+		\label{fig:structure Haura}
+\end{figure}
+
+
+
+At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\varepsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
+
+The next layer, the \emph{Tree Layer} manages the $B^{\varepsilon}$-trees.
+The \emph{database layer} sends messages to the $B^{\varepsilon}$ trees consisting of key-value or key-message pairs that the $B^{\varepsilon}$ trees process. A message for key-message pair can contain arbitrary data or apply arbitrary code on data.
+Key-value pairs are stored in leave nodes and key-message nodes are stored in inner nodes of the tree.
+Each node is an object for the \emph{Data Management Layer} and is tracked individually.
+
+The \emph{Data Management Layer}(DML) manages objects for the \emph{Tree Layer} and \emph{database layer} which means cache objects in memory, 
+track modifications to objects and write-back modified objects.
+Main part of the DML is the Data Management Unit (DMU).
+The DMU is shared by all trees and ensures that no irregular state can be reached.
+It takes care of critical disk management such as block allocation.
+In addition, the DMU manages the cache, which is the main topic of this work.
+
+The \emph{Storage Pool Layer} is an abstraction over the used storage hardware.
+Furthermore the storage is divided in to tiers from \emph{Fastest}, \emph{Fast}, \emph{Slow} to \emph{Slowest}.
+The user can decide how the used hardware falls into these tiers. Also, not all tiers need to be used.
+
+The last layer, the \emph{Vdev Layer}, is responsible for actually reading and writing data from the disks.
+Single disk, multiple disks or RAID-like configurations can be used.
 
 \section{Cache Replacement Policies}
+\label{sec:cache replacement policies}
 
--> introduction text needed
+- introduction text needed
+- make reference to introduction, mentioned caching there
 
 \subsection{Optimal Cache Replacement Policy}
 The theoretically optimal cache replacement policy is Bélády's algorithm (also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
@@ -444,6 +458,7 @@ This is because web caches have a highly skewed access distribution with low loc
 many entries accessed only once, \cite{mahanti2000traffic}.
 
 \section{Improved Cache Replacement Policies}
+\label{sec:improved cache replacement policies}
 
 All cache replacement policies presented in the last section have significant drawbacks.
 Bélády's algorithm must know the access pattern in advance and is only of theoretical value.
@@ -563,6 +578,7 @@ The predicted sequence is then applied to conventional cache replacement algorit
 
 
 \section{Summary}
+\label{sec:summary}
 
 - heuristics mostly work for the intended cases but have problems in other cases, give examples for that\\
 - machine learning the new hype\\
@@ -613,7 +629,7 @@ So this is a cache better suited for multi-threading.
 
 \section*{TinyLFU: A highly efficient cache admission policy by \cite{einziger2017tinylfu}}
 
-This is a LFU based cacehe replacement algorithm which uses a Bloom-Filter to approximate the frequency information for the cache entries with a relatively small memory usage.
+This is a LFU based cache replacement algorithm which uses a Bloom-Filter to approximate the frequency information for the cache entries with a relatively small memory usage.
 So even for large caches which can't be entirely in RAM the Bloom-Filter is small enough to fit in to RAM.
 It is based on the assumption of a skewed accesses distribution like zipfian.
 Also a small window, a FIFO queue is used to bring requested entries into the cache and then
@@ -632,10 +648,18 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 
 % see if I want to mention copy-on-write in background Haura or somewhere else
 
--> need no chapter introduction
+In this chapter, we describe the cache replacement strategies that we implemented in Haura 
+and also the changes we had to make to Haura to implement them.
+First, we consider the DML state cycle (\cref{sec:dml state cycle}), 
+since the behavior of the DMU, and thus the cache, follows it.
+After that, we are looking at the cache trait, the interface that any cache implementation must follow.
+Finally, we examine all the cache replacement strategies that have been implemented.
+Starting with CLOCK, which was already implemented,
+followed by the newly implemented cache replacement policies GCLOCK, CLOCK-Pro and ML-CLOCK.
 
 
 \section{DML State Cycle}
+\label{sec:dml state cycle}
 
 The task of the DML is to manage objects for the tree layer. This includes reading objects from the disk, storing them in the main memory, tracking changes and writing them back.
 This is done by a single DMU which is shared between all trees of the upper layer.
@@ -671,7 +695,7 @@ when the object is either modified or in write back, objects are given a unique 
 The incomplete state can only be reached when an object is deserialized from disk.
 If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
 
-\newpage
+\bigskip
 
 \begin{lstlisting}[language=Rust,mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
 	label=lst:ObjRef enumeration]
@@ -715,6 +739,7 @@ pub enum ObjectKey<G> {
 \bigskip
 
 \section{Cache Trait}
+\label{sec:cache trait}
 
 The DML state cycle and the fact that the cache is managed by the DMU place additional demands on the cache.
 We see this in the cache trait, listing \ref{lst:simplified Cache trait}.
@@ -767,16 +792,21 @@ Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive wr
 \section{Implemented Cache Replacement Policies}
 \label{sec:implemented cache replacement policies}
 
--> need introduction text\\
--> CLOCK was already implemented\\
--> why we use clock\\
--> chosen because we follow the strategies in section improved cache replacement policies\\
-	1. Clock, LRU base case\\
-	2. GCLOCK, tracking deeper history information\\
-	3. CLOCK-Pro, detecting accesses pattern\\
-	4. ML-CLOCK, machine learning policy\\
--> hash map used for all policies to speed up search time\\
--> say something to usage 
+In this Section, we examine the implemented cache replacement policies.
+We have limited ourselves to clock based cache replacement policies since they have a lower overhead compared
+to most list-based cache replacement policies.
+Since clock-based replacement strategies try to do as little work as possible when cache hits occur and 
+do most of the work during the eviction of an entry, which should be infrequent.
+
+We followed the improvement strategies from the \cref{sec:improved cache replacement policies}
+in selecting the algorithms.
+The CLOCK policy was already implemented and is an approximation of LRU.
+The next policy we consider is GCLOCK, a generalization of CLOCK that uses more history information.
+CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
+It uses the inter-reference recency to distinguish between hot and cold entries and handle these entries differently.
+The last implemented cache replacement policy, ML-CLOCK, is an example for an policy that uses machine learning.
+A model is trained based on the removed entries and the cache hits. 
+This model is then used to find the entry for the eviction.
 
 \subsection{CLOCK}
 
@@ -1251,6 +1281,10 @@ The case that the entry for eviction is pinned can be handled the same way as in
 
 \section{Summary}
 
+-> coming soon
+
+
+
 \chapter{Evaluation}
 \label{cha:evaluation}
 
@@ -1280,14 +1314,10 @@ The case that the entry for eviction is pinned can be handled the same way as in
 - only synthetic benchmarks 
 - zipf, normal, zoned, uniform 
 
-\section{Results}
 
-- problems with results, capacity management doesn't work in all cases
+\section{Single threaded}
 
-\subsection{Single threaded}
-
-\todo[inline]{change GB to GiB}
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{randread_zipf.jpg}		
@@ -1312,12 +1342,12 @@ The case that the entry for eviction is pinned can be handled the same way as in
 		\caption{Uniform-distribution}
 		\label{fig:randread uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random read-only workloads with different 				random distributions.}
+	\caption{These figures show the hit-rate file-size diagram for each implemented cache replacement policy for random read-only workload with different 				random distributions.}
 \end{figure}
 
 %-------------------------------------------------------
 
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{rw_90to10_zipf.jpg}		
@@ -1342,12 +1372,12 @@ The case that the entry for eviction is pinned can be handled the same way as in
 		\caption{Uniform-distribution}
 		\label{fig:rw_90to10  uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 90\% read 10\% write workloads with different random distributions.}
+	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 90\% read 10\% write workload with different random distributions.}
 \end{figure}
 
 %-------------------------------------------------------
 
-\begin{figure}
+\begin{figure}[H]
 	\centering
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{rw_50to50_zipf.jpg}		
@@ -1372,23 +1402,370 @@ The case that the entry for eviction is pinned can be handled the same way as in
 		\caption{Uniform-distribution}
 		\label{fig:rw_90to10  uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 50\% read 50\% write workloads with different random distributions.}
+	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 50\% read 50\% write workload with different random distributions.}
 \end{figure}
 
 %-------------------------------------------------------
 
 % not sure if I want to use this, don't have seq write for multi-threaded
-\begin{figure}[ht]
+\begin{figure}[H]
 	\centering
 	\includegraphics[scale=0.45]{seq_write.jpg}		
 	\caption{This figure show the hit-rate file-size diagram for each implemented 		cache replacement policy for sequential writes}
 	\label{fig:seq write}
 \end{figure}
-	
 
-\subsection{Multi threaded}
 
--> coming soon
+\section{Multi threaded}
+
+- why the split of workloads
+
+\subsection{Zipf-Distribution Workloads}
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_zipf.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_zipf.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_zipf.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_zipf.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for zipf-distribution random read only workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zipf.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zipf.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zipf.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zipf.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for zipf-distribution random 90\% read 10\% write workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zipf.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zipf.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zipf.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zipf.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 50\% read 50\% write workload.}
+\end{figure}
+
+%----------------------------------------------
+
+\subsection{Normal-Distribution Workloads}
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_normal.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_normal.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_normal.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_normal.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random read only workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_normal.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_normal.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_normal.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_normal.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 90\% read 10\% write workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_normal.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_normal.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_normal.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 50\% read 50\% write workload.}
+\end{figure}
+
+
+%----------------------------------------------
+
+\subsection{Zoned-Distribution Workloads}
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_zoned.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_zoned.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_zoned.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_zoned.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random read only workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zoned.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zoned.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zoned.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zoned.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random 90\% read 10\% write workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zoned.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zoned.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zoned.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zoned.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random 50\% read 50\% write workload.}
+\end{figure}
+
+%----------------------------------------------
+
+\subsection{Uniform-Distribution Workloads}
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_uniform.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_uniform.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_uniform.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_uniform.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random read only workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_uniform.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_uniform.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_uniform.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_uniform.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random 90\% read 10\% write workload.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_uniform.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_uniform.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_uniform.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_uniform.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random 50\% read 50\% write workload.}
+\end{figure}
 
 \section{Summary}
 
