@@ -243,7 +243,12 @@ For example, when a cache entry is modified, we need to write the data back to t
 
 \section{Hierarchical Storage Management}
 
-- coming soon
+- some similarities to caching
+- uses migration policies similar to caching policies
+- but instead of copies in faster memory like caching did
+  the data is moved completely
+- data can moved up and downwards the memory hierarchy
+
 
 \section{Contribution}
 % check if contribution or contributions is right
@@ -305,7 +310,9 @@ So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries 
 \section{Copy on Write}
 \label{sec:copy on write}
 
-- should be mentioned because it important part of haura and $B^{\varepsilon}$-tree
+- should be mentioned because it important part of haura and $B^{\varepsilon}$-tree\\
+- used for easy creation of snapshots \\
+- described in \cite{patterson1995informed}\\
 
 \section{Haura}
 \label{sec:haura}
@@ -688,11 +695,11 @@ The \texttt{info} field can be used to store additional tags for an object.
 And the last field \texttt{generation} is used to track the age of an object.
 
 The DML objects can be called by their unique \emph{ObjRef}.
-This reference, shown in \ref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
+This reference, shown in listing \ref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
 Thus, four states are possible unmodified, modified, in write back or incomplete.
 If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
-The incomplete state can only be reached when an object is deserialized from disk.
+The incomplete state, as seen in listing \ref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
 If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
 
 \bigskip
@@ -799,7 +806,7 @@ Since clock-based replacement strategies try to do as little work as possible wh
 do most of the work during the eviction of an entry, which should be infrequent.
 
 We followed the improvement strategies from the \cref{sec:improved cache replacement policies}
-in selecting the algorithms.
+in selecting the cache replacement policies to implement.
 The CLOCK policy was already implemented and is an approximation of LRU.
 The next policy we consider is GCLOCK, a generalization of CLOCK that uses more history information.
 CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
@@ -1241,7 +1248,6 @@ The next step is to apply the prediction operation to both candidates and to dec
 rules in table \ref{tab:ml-clock preference rules} will be used.
 Since the goal is to minimize write operations, in 3 out of 4 possible cases the c-candidate is removed and not the d-candidate.
 
-
 \begin{table}[ht]
 	\centering
 	\begin{tabular}{|c|c|c|}
@@ -1265,23 +1271,60 @@ Since the goal is to minimize write operations, in 3 out of 4 possible cases the
 
 When the entry to evict was found,
 it is checked whether this entry is already in the ghost queue.
-If this is the case, a learning operation is triggered and this entry will be evicted from the ghost queue.
-In our implementation, we do not reinsert the entry into the cache, for the same reason as in CLOCK-Pro, the DMU
-manages which entries are inserted into the cache.
+If this is the case, a learning operation is triggered.
+Additionally, the entry is evicted from the Ghost queue and added back to the cache.
+In our implementation, we do not reinsert the entry into the cache for the same reason as in CLOCK-Pro, the DMU
+manages which entries are inserted into the cache and not the cache itself.
 
 In case the entry for eviction is not already in the ghost queue, it will be insert into the ghost queue.
-An learning operation is triggered if the ghost queue exceeds it capacity.
+An learning operation is triggered if the ghost queue exceeds it capacity and thus an ghost entry at the front leaves the ghost queue.
 
 So there are three possibilities to trigger a learning operation during a cache hit, 
 if the entry for eviction is already in the ghost queue or
-if a entry must leave the ghost queue if .
+if a entry must leave the ghost queue.
 
-The case that the entry for eviction is pinned can be handled the same way as in CLOCK and GCLOCK, simple leave the pinned entry in the clock and continue the search at the next entry.
+The case that the entry for eviction is pinned can be handled the same way as in CLOCK and GCLOCK, 
+simple leave the pinned entry in the clock and continue the search at the next entry.
 
 
 \section{Summary}
 
--> coming soon
+The basis for the data management in Haura is the DML state cycle.
+Each object can be in one of the four states on disk, unmodified, modified or in write back.
+Also the DML specifies which state changes are possible.
+In particular, the fact that objects cannot leave or enter the cache when in modified or 
+write back state, the pinned entries, requires significant adjustments to the cache policy.
+
+The implemented cache replacement policies followed the improvement strategies from the \cref{sec:improved cache replacement policies}.
+The first implemented policy was CLOCK, which was already implemented.
+CLOCK is an LRU approximation which uses a circular linked list, instead of an priority queue as LRU does.
+By using a circularly linked list, CLOCK achieves similar performance to LRU with lower overhead.
+
+The next policy was GCLOCK, which is generalization of CLOCK, and uses a reference counter instead of only a reference bit.
+Thus, GCLOCK can use more history information for the eviction decision.
+
+The CLOCK-Pro replacement policy uses the inter-reference recency, a measure for the reuse distance, to separate entries into
+hot (low reuse distance) and cold (high reuse distance) entries.
+The hot entries have a high chance to be reused again in near future and should therefore stay in cache and
+the cold entries with low chance to be reused again in near future should be evicted first.
+
+CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
+It uses the inter-reference recency to distinguish between hot and cold entries and handle these entries differently.
+The last implemented cache replacement policy, ML-CLOCK, is an example for an policy that uses machine learning.
+A model is trained based on the removed entries and the cache hits. 
+This model is then used to find the entry for the eviction.
+
+The last implemented policy was ML-CLOCK, which uses a single-layer perceptron to learn from the evicted entries and 
+from the cache hits whether an entry should be evicted or not.
+In contrast to more advanced machine learning algorithm, a single-layer perceptron is easy to implement, no additional libraries are required 
+and has a low runtime overhead.
+Also, unlike the other cache replacement policies, ML-CLOCK attempts not only to minimize cache misses,
+but also to minimize writes to the underlying storage medium.
+For this reason, ML-CLOCK uses two circular linked list, one for the clean (not modified) 
+and one for the dirty (modified) entries.
+
+-> hier weiter machen 
+
 
 
 
