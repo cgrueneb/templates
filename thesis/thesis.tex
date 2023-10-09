@@ -158,7 +158,7 @@ Johannes Wünsche
 % possible structure
 \section{Memory Hierarchy}
 Since the invention of integrated circuits in 1959, CPU performance has grown faster than main memory performance.
-Figure \ref{fig:processor memory gap} shows the improvement in processor performance and DRAM performance since the 1980s.
+\cref{fig:processor memory gap} shows the improvement in processor performance and DRAM performance since the 1980s.
 This leads to the "processor-memory performance gap", also known as the "memory wall" problem \cite{wulf1995hitting}.
 One of the reasons for this is that in the semiconductor industry, CPU and memory are separate domains and have been optimized for different goals.
 CPUs have been optimized for higher clock frequency, whereas DRAM and hard disks have been optimized primarily for higher memory capacity \cite{cpu-mem-gap}.
@@ -172,7 +172,7 @@ Even though the rates of increase in single-core performance have slowed down an
 \end{figure}
 
 
-To reduce the processor-memory performance gap, memory is built up hierarchically, as shown in figure \ref{fig:memory hierarchy}.
+To reduce the processor-memory performance gap, memory is built up hierarchically, as shown in \cref{fig:memory hierarchy}.
 The memory is ordered from fast, expensive and low capacity, which is close to the processor, to progressively slower, cheaper and higher capacity, which is further away from the processor.
 The goal of the memory hierarchy is to develop systems that have enough fast memory, CPU cache and DRAM to not slow down the CPU significantly and on the other hand, have as much memory capacity as necessary provided by using hard disks, solid state disk or flash memory without excessive costs.
 
@@ -194,9 +194,9 @@ Caching can also mean that data from a remote memory is stored in a local memory
 The idea of caching is based on the assumption of temporal and spatial locality.
 Temporal locality means that a datum accessed in the past is likely to be accessed again, and
 spatial locality means that when a datum is accessed, a nearby datum in memory is also likely to be accessed.
-To take advantage of spatial locality, blocks of data are considered instead of single datum as seen in \ref{tab:caching hierarchy}.
+To take advantage of spatial locality, blocks of data are considered instead of single datum as seen in \cref{tab:caching hierarchy}.
 
-If we include caching in the memory hierarchy so that each faster memory caches the slower memory below it, we also have a caching hierarchy as shown in \ref{tab:caching hierarchy}.
+If we include caching in the memory hierarchy so that each faster memory caches the slower memory below it, we also have a caching hierarchy as shown in \cref{tab:caching hierarchy}.
 Caching can be done exclusively in hardware, as is the case with the CPU's L1 and L2 caches, or exclusively in software, as with the Web cache, or in a combination of both, as with the virtual memory of an operating system.
 % think that should be formulated differently
 Caching is an on going research topic and researches came up with various solution for the different use cases.
@@ -243,12 +243,29 @@ For example, when a cache entry is modified, we need to write the data back to t
 
 \section{Hierarchical Storage Management}
 
-- some similarities to caching
-- uses migration policies similar to caching policies
-- but instead of copies in faster memory like caching did
-  the data is moved completely
-- data can moved up and downwards the memory hierarchy
+%- some similarities to caching
+%- uses migration policies similar to caching policies
+%- but instead of copies in faster memory like caching did
+%  the data is moved completely
+%- data can moved up and downwards the memory hierarchy
 
+Hierarchical storage management (HSM), also known as tiered storage, is a data management method that moves data between levels of the storage hierarchy.
+The data is automatically migrated between the storage media based on policies.
+Frequently used data is moved up the memory hierarchy to faster and more expensive 
+storage media and infrequently used data is moved down to slower but cheaper storage media
+ \cite{lugar2001hierarchical}.
+Thus, HSM is a trade-off between latency and bandwidth on the one hand 
+and cost and capacity on the other.
+
+HSM has some similarities to caching.
+Both move data to faster storage based on policies and both have the same goal to improve I/O 
+and reduce cost.
+But there are fundamental differences between them.
+Caching copy the data that is moved to the faster storage and use the copy instead of the original data. 
+The original data still continues to reside on the slower storage.
+So if the copy in cache is changed, the changes must be written back to the original data.
+HSM on the other hand actually moves the data to the faster storage.
+Thus, no write back is necessary.
 
 \section{Contribution}
 % check if contribution or contributions is right
@@ -283,7 +300,7 @@ The basis for $B^{\varepsilon}$-trees is the B-tree, which has good performance 
 because the entire node must be updated for each small write.
 However, if we reduce the node size to optimize for small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
 
-To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown in figure \ref{fig:structure B-epsilon-tree}.
+To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown in \cref{fig:structure B-epsilon-tree}.
 
 \begin{figure}[ht]
 	\centering
@@ -333,7 +350,7 @@ Then Haura would be extended by \cite{hoppner2021design} to support multiple sto
 The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
 
 As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
-Haura is structured in layers as shown in figure \ref{fig:structure Haura}.
+Haura is structured in layers as shown in \cref{fig:structure Haura}.
 
 \begin{figure}[ht]
 	\centering
@@ -479,6 +496,7 @@ The strategies for improvement can be divided into 4 categories,
 (1) explicit user-level hints, (2) using a deeper history information
 (3) detection of access patterns (strategies (1)-(3) from \cite{10.1145/511399.511340})
 and (4) the use of ml-techniques, which we will discuss in more detail below.
+\todo[inline]{use listing, instead of numbers in text}
 
 \subsection{Explicit User-Level Hints}
 
@@ -541,7 +559,7 @@ And cold entries on the other hand have a hight inter-reference recency and are 
 So we divide the cache capacity into a smaller part for hot entries and a larger part for cold entries.
 Furthermore, a variable number of non-resident cold entries can be stored.
 The non-resident cold entries are necessary to track the IRR.
-LIRS uses one LRU priority queue and one FIFO queue, as shown in \ref{fig:lirs queues}.
+LIRS uses one LRU priority queue and one FIFO queue, as shown in \cref{fig:lirs queues}.
 The LRU-queue stores all hot, all resident cold and non-resident cold entries.
 The FIFO queue stores only the resident cold entries and is used to find the entry to be evicted.
 Instead of tracking the IRR directly, the position between entries in the LRU priority queue is used to determine the IRR and to 
@@ -660,7 +678,7 @@ and also the changes we had to make to Haura to implement them.
 First, we consider the DML state cycle (\cref{sec:dml state cycle}), 
 since the behavior of the DMU, and thus the cache, follows it.
 After that, we are looking at the cache trait, the interface that any cache implementation must follow.
-Finally, we examine all the cache replacement strategies that have been implemented.
+Lastly, we examine all the cache replacement strategies that have been implemented.
 Starting with CLOCK, which was already implemented,
 followed by the newly implemented cache replacement policies GCLOCK, CLOCK-Pro and ML-CLOCK.
 
@@ -676,30 +694,29 @@ To accomplish all this, objects must be uniquely identifiable.
 All unmodified and all on-disk DML objects are identified by an \emph{ObjectPointer}.
 
 \bigskip
-\todo[inline]{syntax highlighting in not correct for all listings}
 
 \begin{lstlisting}[language=Rust,mathescape=true,caption=ObjectPointer struct ,label=lst:ObjectPointer struct]
 pub struct ObjectPointer<D> {
     pub(super) decompression_tag: DecompressionTag,
     pub(super) checksum: D,
     pub(super) offset: DiskOffset,
-    pub(super) size: Block<u32>,
+    pub(super) $\textcolor{black}{\texttt{size}}$: Block<u32>,
     pub(super) info: DatasetId,
     pub(super) generation: Generation,
 }
 \end{lstlisting}
 % pub(super) makes an item visible to the parent module. This is equivalent to pub(in super).
 
-The struct fields \texttt{offset}, \texttt{size}, \texttt{checksum} and \texttt{decompression\_tag}, in listing \ref{lst:ObjectPointer struct}, are used to read an object from disk and decompress it.
+The struct fields \texttt{offset}, \texttt{size}, \texttt{checksum} and \texttt{decompression\_tag}, in \cref{lst:ObjectPointer struct}, are used to read an object from disk and decompress it.
 The \texttt{info} field can be used to store additional tags for an object.
 And the last field \texttt{generation} is used to track the age of an object.
 
 The DML objects can be called by their unique \emph{ObjRef}.
-This reference, shown in listing \ref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
+This reference, shown in \cref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
 Thus, four states are possible unmodified, modified, in write back or incomplete.
 If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
-The incomplete state, as seen in listing \ref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
+The incomplete state, as seen in \cref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
 If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
 
 \bigskip
@@ -729,7 +746,7 @@ When the write back is finished the object state change to unmodified.
 An unmodified object can either change the state to modified if the object has been modified or evicted from cache to disk.
 And lastly, any object on disk can be fetched in cache and will be in unmodified state.
 
-For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown in \ref{lst:ObjectKey enumeration}.
+For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown in \cref{lst:ObjectKey enumeration}.
 These \emph{ObjectKey} are  from the \emph{ObjRef} for each cache entry.
 Objects in incomplete state are not stored in cache.
 
@@ -749,13 +766,13 @@ pub enum ObjectKey<G> {
 \label{sec:cache trait}
 
 The DML state cycle and the fact that the cache is managed by the DMU place additional demands on the cache.
-We see this in the cache trait, listing \ref{lst:simplified Cache trait}.
+We see this in the cache trait, \cref{lst:simplified Cache trait}.
 
 The first difference is that we have an explicit evict function. In most cache implementations, evict is a private function that the cache itself calls.
 In our case, however, the DMU must call the evict function, not the cache itself.
 Furthermore, the evict function must take into account that there are cache entries that 
 are pinned i.e. in write back or modified state and therefore cannot be removed from the cache.
-Also, the DMU can remove specific cache entries, listing  \ref{lst:simplified Cache trait} line 6 and line 7.
+Also, the DMU can remove specific cache entries, \cref{lst:simplified Cache trait} line 6 and line 7.
 The \texttt{remove}()-function for unmodified entries and \texttt{force\_remove}() for pinned entries.
 
 \bigskip
@@ -782,7 +799,7 @@ trait Cache {
 
 The second difference is that it must be possible to change the key for cache entries.
 Because an object in cache can change his state 
-Therefor we have two functions, listing \ref{lst:simplified Cache trait} line 8 and line 9. 
+Therefor we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
 Again two functions for unmodified and pinned entries.
 
 Another difference is that the cache must be able to handle cache entries of any size.
@@ -791,7 +808,7 @@ Each fetched entry is always inserted into the cache, and then the eviction func
 So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the eviction function is called
 is called before inserting so that the cache size is never exceeded.
 
-Furthermore, we have added the \texttt{get\_mut}()-function, listing \ref{lst:simplified Cache trait} line 5, 
+Furthermore, we have added the \texttt{get\_mut}()-function, \cref{lst:simplified Cache trait} line 5, 
 since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used and thus a read-lock is sufficient.
 But for ML-CLOCK it is needed to change the cache and atomic operations cannot be used.
 Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive write-lock.
@@ -833,8 +850,7 @@ Also, each entry has a reference bit that is initially set to 0 and is set to 1 
 		\label{fig:circular list for CLOCK}
 \end{figure}
 
-
-Listing \ref{lst:clock-algorithm} shows the steps during the request of an entry.
+\cref{lst:clock-algorithm} shows the steps during the request of an entry.
 % this doesn't sound right.
 To find an entry to evict, we look at the entry to which the hand is pointing.
 If the reference bit for this entry is 0, we have found the entry to be evicted.
@@ -904,7 +920,7 @@ Also, like CLOCK, to find an entry for eviction we look at the entry the hand po
 If the reference counter for this entry is 0, that entry is evicted.
 Otherwise, we decrement the reference counter and move the pointer to the next entry 
 until we find an entry with a reference counter of 0.
-The listing \ref{lst:gclock-algorithm} shows the steps during the request of an entry.
+The \cref{lst:gclock-algorithm} shows the steps during the request of an entry.
 
 \bigskip
 
@@ -960,7 +976,7 @@ However, CLOCK-Pro, unlike LIRS, is adoptable because it does not require a pred
 
 To achieve better efficiency than LIRS, CLOCK-Pro combines the LRU priority queue and a FIFO queue of LIRS in a circularly linked list.
 And instead of using only one hand, as in CLOCK, three hands are used to provide the functions of LIRS, 
-as shown in \ref{fig:clock in clock-pro}.
+as shown in \cref{fig:clock in clock-pro}.
 For our implementation, we use a circular double linked list instead of circular single linked list, like in CLOCK.
 Because in some cases me need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
 Since the hands should not point to the same entry.
@@ -999,8 +1015,8 @@ It also evicts passed non-resident cold entries from the cache.
 The reason for this is that non-resident cold entries that have not already been converted to hot entries have a high inter-reference recency 
 and therefore should not become hot entries.
 
-The listing \ref{lst:clock-pro-algorithm} shows the steps during the request of an entry.
-What we see is that all hands work together to find an entry for eviction, listing \ref{lst:clock-pro-algorithm} line 12 to line 65.
+The \cref{lst:clock-pro-algorithm} shows the steps during the request of an entry.
+What we see is that all hands work together to find an entry for eviction, \cref{lst:clock-pro-algorithm} line 12 to line 65.
 
 \bigskip
 % better to use newpage in final version to avoid that the listing spans over 3 pages
@@ -1084,7 +1100,7 @@ So that the cache actual size can be at most $2m$ entries.
 To achieve adaptability, the number of hot and cold entries is not fixed.
 The capacity for resident cold entries $m_c$ is increased by one, if an cold entry is accessed during its test phase 
 and $m_c$ is decreased by one, if a cold entry leaves its test phase without being re-accessed.
-As we see in listing \ref{lst:clock-pro-algorithm} the actual hand movements are triggered by the count of hot and cold entries and the 
+As we see in \cref{lst:clock-pro-algorithm} the actual hand movements are triggered by the count of hot and cold entries and the 
 capacity for hot and cold entries.
 This changes the behavior of CLOCK-Pro depending on the underlying workload.
 
@@ -1181,7 +1197,7 @@ Both $v_{predict}$ and $v_{expect}$ can either be 1 or 0.
 Thus, the term $(v_{expect} - v_{predict})$ defines if the weights are updated or not.
 
 
-Listing \ref{lst:clock-algorithm} shows the steps during the request of an entry and also shows when 
+\cref{lst:clock-algorithm} shows the steps during the request of an entry and also shows when 
 the prediction and the learning take place.
 
 \bigskip
@@ -1245,7 +1261,7 @@ we search for eviction candidates in both clocks.
 Like the hand in CLOCK, the c-hand and d-hand search for an entry with the reference bit set to 0.
 So there are two eviction candidates, the c-candidate from the clean-clock and the d-candidate from the dirty-clock.
 The next step is to apply the prediction operation to both candidates and to decide which candidate to evict the preference 
-rules in table \ref{tab:ml-clock preference rules} will be used.
+rules in \cref{tab:ml-clock preference rules} will be used.
 Since the goal is to minimize write operations, in 3 out of 4 possible cases the c-candidate is removed and not the d-candidate.
 
 \begin{table}[ht]
@@ -1264,10 +1280,10 @@ Since the goal is to minimize write operations, in 3 out of 4 possible cases the
 		1 & 1 & C-Candidate \\
 		\hline
 	\end{tabular}
-	\caption{Preference rules for victim entry}
+	\caption{Preference rules for victim entry \cite{cho2021ml}}
 	\label{tab:ml-clock preference rules}
 \end{table}
-\todo[inline]{insert source}
+
 
 When the entry to evict was found,
 it is checked whether this entry is already in the ghost queue.
@@ -1323,11 +1339,6 @@ but also to minimize writes to the underlying storage medium.
 For this reason, ML-CLOCK uses two circular linked list, one for the clean (not modified) 
 and one for the dirty (modified) entries.
 
--> hier weiter machen 
-
-
-
-
 \chapter{Evaluation}
 \label{cha:evaluation}
 
@@ -1340,22 +1351,56 @@ and one for the dirty (modified) entries.
 
 % 25-35%, ca. 10-14 Seiten
 
--> start after benchmarks are done
+In this chapter, we evaluate the implemented cache replacement policies which we described in \cref{cha:design and implementation}.
+First, we will describe the used hardware and software for the performance evaluation.
+After that, we explain how the benchmarks for performance evaluation are constructed and why we chose them.
+And lastly, we look at the results of the evaluation which we divided in singled threaded and multi-threaded workloads.
 
-% possible structure
 \section{Setup}
 
-- used ovgu cluster
-- software version 
-- Haura config json
+%- centos stream 8
+%- kernel 4.18.0-512.el8.x86_64
+%- AMD Epyc 7443 2.85 GHz 24 cores
+%- 128 GB RAM
+%- storage on CephFS
+%- haura config could be in appendix 
 
+
+For the evaluation the HPC-cluster of the Otto-von-Guericke-University was used.
+The HPC cluster of the Otto-von-Guericke-University was used for the evaluation.
+The \cref{tab:hardware node} shows the hardware of the used node.
+As secondary storage, we used the home folder which is shared between all nodes and uses CephFS.
+
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{|c|c|}
+		\hline
+		\textbf{CPU} & AMD Epyc 7443\\
+		\hline
+		\textbf{cores per CPU} & 24\\
+		\hline
+		\textbf{base clock CPU} & 2.85\\
+		\hline
+		\textbf{RAM} & 128 GB DDR4\\
+		\hline
+		\textbf{Secondary storage} & shared CephFS across all nodes \\
+		\hline
+	\end{tabular}
+	\caption{Hardware for evaluation}
+	\label{tab:hardware node}
+\end{table}
+
+-> next used software
 
 \section{Methodology}
-- synthetic benchmarks with fio zipf and random, if I get random to work\\
-- zip benchmark with linux kernel source files\\
-% \cite{karakostas2000practical} -> contains zipfian distribution as use case for webcaches
-- only synthetic benchmarks 
-- zipf, normal, zoned, uniform 
+
+%%- used 1GiB cache which is relatively small to actually see cache misses
+%%- conisderble larger cache would need much larger I/O files to actually show misses
+%- synthetic benchmarks with fio zipf and random, if I get random to work\\
+%- zip benchmark with linux kernel source files\\
+%% \cite{karakostas2000practical} -> contains zipfian distribution as use case for webcaches
+%- only synthetic benchmarks 
+%- zipf, normal, zoned, uniform 
 
 
 \section{Single threaded}
