@@ -284,7 +284,7 @@ Thus, no write back is necessary.
 % 10-20%, ca. 4-10 Seiten
 
 - next chapter gives a short overview of topics necessary to understand the following work\\
-- \ref{caching}
+%- \ref{caching}
 
 \section{$B^{\varepsilon}$-tree}
 \label{sec:tree}
@@ -337,34 +337,11 @@ So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries 
 Haura is a research storage stack written primarily in Rust.
 Unlike traditional file systems, Haura runs in user space rather than kernel space.
 Also, Haura uses a key-value and object interface rather than the usual POSIX interface.
-It can be used either directly by an application,
- in which case Haura runs in the process
- context of the application, as shown in  
-\cref{fig:directly Haura}, or use JULEA as a wrapper for Haura, as shown in
- \cref{fig:wrapper Haura}.
+It can be used either directly by an application, in which case Haura runs in the process context of the application, or
+use JULEA as a wrapper for Haura.
 JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use.
 
-
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{\textwidth}
-		\includegraphics[scale=0.4]{haura_directly.jpg}
-		\caption{Direct usage of haura.}
-		\label{fig:directly Haura}
-	\end{subfigure}
-	
-	\begin{subfigure}{\textwidth}
-		\includegraphics[scale=0.4]{haura_wrapper.jpg}
-		\caption{Using a wrapper.}
-		\label{fig:wrapper Haura}
-	\end{subfigure}
-	\caption{This figure shows the 2 options to use Haura either directly or 	
-			through a wrapper like JULEA.}
-\end{figure}
-
-
-
-
+\todo[inline]{insert schemes from Haura docu for better understanding}
 \todo[inline]{insert link to Haura docu as source}
 
 The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
@@ -755,13 +732,8 @@ This reference, shown in \cref{lst:ObjRef enumeration}, equals to the state of a
 Thus, four states are possible unmodified, modified, in write back or incomplete.
 If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
-The incomplete state, as seen in \cref{lst:ObjRef enumeration}, is an intermediate state during serialization of an object for writing on disk or deserialization of an object from disk to main memory. 
-
-% talk with Johannes what he means with his annotation
-%The incomplete state, as seen in \cref{lst:ObjRef enumeration}, can only be 
-%reached when an object is deserialized from disk.
-%If the DMU encounter an incomplete object during runtime, Haura panics and 
-%crashes.
+The incomplete state, as seen in \cref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
+If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
 
 \bigskip
 
@@ -821,7 +793,7 @@ The \texttt{remove}()-function for unmodified entries and \texttt{force\_remove}
 
 \bigskip
 
-\begin{lstlisting}[language=Rust,mathescape=true,caption={Simplified Cache trait without type aliases, generics, function parameters and function return types},label=lst:simplified Cache trait]
+\begin{lstlisting}[language=Rust,mathescape=true,caption={simplified Cache trait without type aliases, generics, function parameters and function return types},label=lst:simplified Cache trait]
 trait Cache {
     fn new();
     fn contains_key();
@@ -843,23 +815,18 @@ trait Cache {
 
 The second difference is that it must be possible to change the key for cache entries.
 Because an object in cache can change his state 
-Therefore, we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
+Therefor we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
 Again two functions for unmodified and pinned entries.
 
 Another difference is that the cache must be able to handle cache entries of any size.
 The handling of cache entries of arbitrary size is managed by the DMU.
 Each fetched entry is always inserted into the cache, and then the eviction function is invoked until the cache capacity is again below the specified cache size.
-This may cause the cache size to temporarily exceed the specified cache capacity.
+So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the eviction function is called
+is called before inserting so that the cache size is never exceeded.
 
-% changed due to suggestion from Johannes
-%So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the eviction function is called
-%before inserting so that the cache size is never exceeded.
-
-Furthermore, we have added the \texttt{get\_mut}()-function, \cref{lst:simplified 
-Cache trait} line 5, 
-since the \texttt{get}()-function does not allow that the state of the cache 
-changes, respectively atomics are used and thus a read-lock is sufficient.
-However, for ML-CLOCK it is necessary to change the state of the cache, not just updating the metadata for an entry where atomics are sufficent.
+Furthermore, we have added the \texttt{get\_mut}()-function, \cref{lst:simplified Cache trait} line 5, 
+since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used and thus a read-lock is sufficient.
+But for ML-CLOCK it is needed to change the cache and atomic operations cannot be used.
 Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive write-lock.
 
 \section{Implemented Cache Replacement Policies}
@@ -874,7 +841,7 @@ do most of the work during the eviction of an entry, which should be infrequent.
 We followed the improvement strategies from the \cref{sec:improved cache replacement policies}
 in selecting the cache replacement policies to implement.
 The CLOCK policy was already implemented and is an approximation of LRU.
-The next policy we consider is GCLOCK, a generalization of CLOCK that uses more historical information.
+The next policy we consider is GCLOCK, a generalization of CLOCK that uses more history information.
 CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
 It uses the Inter-Reference recency to distinguish between hot and cold entries and handle these entries differently.
 The last implemented cache replacement policy, ML-CLOCK, is an example for an policy that uses machine learning.
@@ -905,7 +872,7 @@ To find an entry to evict, we look at the entry to which the hand is pointing.
 If the reference bit for this entry is 0, we have found the entry to be evicted.
 If the reference bit is 1, we set the reference bit to 0 and move the hand to the next entry.
 These steps are repeated until an entry is found whose reference bit is set to 0 and which can thus be evicted.
-Newly insert entries are placed behind the hand which represents the tail of the list, if we see the hand as the head of the list.
+New insert entries are placed behind the hand which represents the tail of the list, if we see the hand as the head of the list.
 
 \bigskip
 
@@ -1021,14 +988,14 @@ The CLOCK-Pro cache replacement policy \cite{jiang2005clock} combines the effici
 The basic idea of CLOCK-Pro is the same as LIRS, which is to categorize cache entries into hot and cold entries based on Inter-Reference recency.
 The hot entries always stays in cache and the cold entries allow a quick eviction of rarely accessed entries.
 Also, like LIRS, CLOCK-Pro uses non-resident cold entries to track history information.
-However, CLOCK-Pro, unlike LIRS, is adoptable as it does not require a predefined parameter to control the number of hot and cold entries.
+However, CLOCK-Pro, unlike LIRS, is adoptable because it does not require a predefined parameter to control the number of hot and cold entries.
 
 To achieve better efficiency than LIRS, CLOCK-Pro combines the LRU priority queue and a FIFO queue of LIRS in a circularly linked list.
 And instead of using only one hand, as in CLOCK, three hands are used to provide the functions of LIRS, 
 as shown in \cref{fig:clock in clock-pro}.
-For our implementation, we use a circular doubly linked list instead of circular singly linked list, like in CLOCK.
-Because in some cases we need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
-Since hands should not point to the same entry.
+For our implementation, we use a circular double linked list instead of circular single linked list, like in CLOCK.
+Because in some cases me need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
+Since the hands should not point to the same entry.
 
 \begin{figure}[ht]
 	\centering
@@ -1038,28 +1005,28 @@ Since hands should not point to the same entry.
 		\label{fig:clock in clock-pro}
 \end{figure}
 
-For each entry we need to store additional metadata. This includes whether it is a hot or cold entry, resident or non-resident in the cache, has it been 
-referenced in the near past, and whether or not the entry is in the test phase.
-Each hot Entry is always resident and not in the testing phase.
+For each entry we need to store additional metadata. This includes whether it is a hot or cold entry, is it resident or non-resident in the cache, has it been referenced in the near past, and is the entry in the test phase.
+Each Hot Entry is always resident and not in the testing phase.
 Cold entries, on the other hand, may be resident or non-resident and may or may not be in the testing phase.
 Also, all newly inserted entries are resident cold entries in the test phase.
 Both can be referenced or not.
 The test phase is used to give cold entries the chance to turn into hot entries.
+As we will see in a moment.
 
 The $\textbf{Hand}_{hot}$ marks the tail of the list and therefore points to the last hot entry.
-Also, $\textbf{Hand}_{hot}$ turns unreferenced hot entries into cold entries  and removes the reference for referenced hot entries when it passes over them.
+Also, $\textbf{hand}_{hot}$ turns unreferenced hot entries into cold entries  and removes the reference for referenced hot entries when it passes over them.
 
 
 The $\textbf{Hand}_{cold}$ is used to find the entry for eviction. 
 In this respect $\textbf{Hand}_{cold}$ operates like the hand in CLOCK.
-This means that $\textbf{Hand}_{cold}$ will traverse all entries until it finds a resident cold entry that is not referenced and thus can be evicted.
+This means that $\textbf{hand}_{cold}$ will traverse all entries until it finds a resident cold entry that is not referenced and thus can be evicted.
 If the entry to be evicted is in the test phase, it remains in the cache as a non-resident entry, if it is not in the test phase, it is completely evicted from the cache.
 So if there are only hot entries in the cache,  
 we must first convert hot entries to cold entries in order to evict an entry.
-Furthermore, $\textbf{Hand}_{cold}$ turns referenced cold entries in test phase to hot entries. 
-A reference during test phase means that the Inter-Reference recency for this entry is low enough to be a categorized as an hot entry.
+Furthermore, $\textbf{Hand}_{cold}$ turn referenced cold entries in test phase to hot entries. 
+This is because the reference during test phase means that the Inter-Reference recency for this entry is low enough to be a categorized as an hot entry.
 
-$\textbf{Hand}_{test}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
+And the $\textbf{Hand}_{cold}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
 It also evicts passed non-resident cold entries from the cache.
 The reason for this is that non-resident cold entries that have not already been converted to hot entries have a high Inter-Reference recency 
 and therefore should not become hot entries.
@@ -1148,13 +1115,13 @@ Furthermore, at most $m$ non-resident cold entries can be stored.
 So that the cache actual size can be at most $2m$ entries.
 To achieve adaptability, the number of hot and cold entries is not fixed.
 The capacity for resident cold entries $m_c$ is increased by one, if an cold entry is accessed during its test phase 
-and $m_c$ is decreased by one, if a cold entry leaves its test phase without being accessed again.
+and $m_c$ is decreased by one, if a cold entry leaves its test phase without being re-accessed.
 As we see in \cref{lst:clock-pro-algorithm} the actual hand movements are triggered by the count of hot and cold entries and the 
 capacity for hot and cold entries.
 This changes the behavior of CLOCK-Pro depending on the underlying workload.
 
 When $m_c$ is large, CLOCK-Pro behaves similarly to LRU. But if $m_c$ is small it behaves like LIRS.
-The small $m_c$ leads to a quicker eviction of newly inserted entries and the entries with low Inter-Reference recency, hot entries, have a higher 
+The small $m_C$ leads to a quicker eviction of newly inserted entries and the entries with low Inter-Reference recency, hot entries, have a higher 
 chance to stay in cache. Thus, in theory, CLOCK-Pro has the advantage of LRU for workloads with strong locality and 
 the advantages of LIRS for workloads with weak locality.
 
@@ -1164,11 +1131,9 @@ Because this would imply that the cache tells the DMU what to do and not the oth
 
 Furthermore, the treatment of a pinned entry during eviction, is more complicated then for CLOCK and GCLOCK.
 We have already seen that for eviction all pointers work together. If the entry intended for eviction remains in the cache, it can happen that a 
-hand gets stuck on this entry, since the entry is pinned and cannot be removed,
-which causes an endless loop.
-To prevent this, this entry is 
+hand gets stuck on this entry, since the entry is pinned it cannot be removed. This can lead to an endless loop. To prevent this, this entry is 
 removed and temporally saved. So that the hands can work as intended.
-Afterwards, the pinned entry is inserted back into the cache.
+If it then occurs that the entry is pinned, the entry is again insert into the cache.
 
 \subsection{ML-CLOCK}
 \label{sub:ml-clock}
@@ -1196,9 +1161,9 @@ ML-CLOCK uses two circular linked lists.
 One for the clean entries which we refer to as clean-clock 
 and a second for the dirty entries which we will refer to as dirty-clock
 which is also sorted by the logical block address for each entry.
-Both circular list have one hand, the \textbf{C-hand} for the clean-clock and 
-the \textbf{D-hand} for the dirty-clock.
-When the \textbf{D-hand} move to the next entry, it moves the next entry 
+Both circular list have one hand, the c-hand for the clean-clock and 
+the d-hand for the dirty-clock.
+When the d-hand move to the next entry, it moves the next entry 
 which has the closest address in the dirty clock.
 This ensures that sequential blocks are written back, if possible.
 Furthermore, we use a ghost queue which saves the metadata of evicted entries and 
@@ -1307,9 +1272,9 @@ Therefore, the entry is moved from the clean-clock to the dirty-clock.
 For this case, we added the \texttt{get\_mut}()-function to the Cache trait.
 % could be insert chapter for cache trait.
 
-To find an entry for eviction during a cache miss, 
+To find a entry for eviction during a cache miss, 
 we search for eviction candidates in both clocks.
-Like the hand in CLOCK, the \textbf{C-hand} and \textbf{D-hand} search for an entry with the reference bit set to 0.
+Like the hand in CLOCK, the c-hand and d-hand search for an entry with the reference bit set to 0.
 So there are two eviction candidates, the c-candidate from the clean-clock and the d-candidate from the dirty-clock.
 The next step is to apply the prediction operation to both candidates and to decide which candidate to evict the preference 
 rules in \cref{tab:ml-clock preference rules} will be used.
@@ -1331,12 +1296,12 @@ Since the goal is to minimize write operations, in 3 out of 4 possible cases the
 		1 & 1 & C-Candidate \\
 		\hline
 	\end{tabular}
-	\caption{Preference rules for victim entry \cite{cho2021ml}.}
+	\caption{Preference rules for victim entry \cite{cho2021ml}}
 	\label{tab:ml-clock preference rules}
 \end{table}
 
 
-When a valid eviction candidate was found,
+When the entry to evict was found,
 it is checked whether this entry is already in the ghost queue.
 If this is the case, a learning operation is triggered.
 Additionally, the entry is evicted from the Ghost queue and added back to the cache.
@@ -1344,21 +1309,14 @@ In our implementation, we do not reinsert the entry into the cache for the same 
 manages which entries are inserted into the cache and not the cache itself.
 
 In case the entry for eviction is not already in the ghost queue, it will be insert into the ghost queue.
-A learning operation is triggered if the ghost queue exceeds it capacity and thus an ghost entry at the front leaves the ghost queue.
+An learning operation is triggered if the ghost queue exceeds it capacity and thus an ghost entry at the front leaves the ghost queue.
 
-So there are three possibilities to trigger a learning operation:
-\begin{enumerate}
-	\setlength\itemsep{-0.8em}
-	\item During a cache hit,	
-	\item An entry for eviction is already in the ghost queue,
-	\item A ghost entry leaves the ghost queue.
-\end{enumerate}
+So there are three possibilities to trigger a learning operation during a cache hit, 
+if the entry for eviction is already in the ghost queue or
+if a entry must leave the ghost queue.
 
-
-The case that the entry for eviction is pinned can be handled the same way as in 
-CLOCK and GCLOCK, 
-by leaving the pinned entry in the clock and continuing the search at the next 
-entry.
+The case that the entry for eviction is pinned can be handled the same way as in CLOCK and GCLOCK, 
+simple leave the pinned entry in the clock and continue the search at the next entry.
 
 
 \section{Summary}
@@ -1390,7 +1348,7 @@ This model is then used to find the entry for the eviction.
 
 The last implemented policy was ML-CLOCK, which uses a single-layer perceptron to learn from the evicted entries and 
 from the cache hits whether an entry should be evicted or not.
-In contrast to more advanced machine learning algorithm, a single-layer perceptron is easy to implement, requires no additional libraries
+In contrast to more advanced machine learning algorithm, a single-layer perceptron is easy to implement, no additional libraries are required 
 and has a low runtime overhead.
 Also, unlike the other cache replacement policies, ML-CLOCK attempts not only to minimize cache misses,
 but also to minimize writes to the underlying storage medium.
@@ -1423,12 +1381,11 @@ And lastly, we look at the results of the evaluation which we divided in singled
 %- storage on CephFS
 %- haura config could be in appendix 
 
+
 For the evaluation the HPC-cluster of the Otto-von-Guericke-University was used.
 The HPC cluster of the Otto-von-Guericke-University was used for the evaluation.
 The \cref{tab:hardware node} shows the hardware of the used node.
-As secondary storage, we used CephFS which is shared between all nodes.
-The used Rust compiler was rustc 1.71.1 and
-Fio 3.33 was used generate I/O workloads.
+As secondary storage, we used the home folder which is shared between all nodes and uses CephFS.
 
 \begin{table}[ht]
 	\centering
@@ -1449,18 +1406,62 @@ Fio 3.33 was used generate I/O workloads.
 	\label{tab:hardware node}
 \end{table}
 
+
 \section{Methodology}
 
-%%- used 1GiB cache which is relatively small to actually see cache misses
-%%- conisderble larger cache would need much larger I/O files to actually show misses
-%- synthetic benchmarks with fio zipf and random, if I get random to work\\
-%- zip benchmark with linux kernel source files\\
-%% \cite{karakostas2000practical} -> contains zipfian distribution as use case for webcaches
-%- only synthetic benchmarks 
-%- zipf, normal, zoned, uniform 
+The performance of a cache depends on the I/O access patterns 
+Cache replacement policy should exploit this fact by 
+choosing which entries will be evicted and which will remain in the cache
+ to avoid unnecessary cache misses.
+
+To test the implemented cache replacement policies, 
+fio is used to create synthetic workloads and measure the cache hits
+for a fixed size of I/O.
+We benchmark the following three workloads for different sizes.
+First, random 100\% read I/O operations, second random 90\% read and 10\% write I/O operations
+and third random 50\% read and 50\% write operations. 
+Furthermore, we benchmark for a single fio thread and multiple fio threads performing I/O operations.
+
+We choose the following distributions as random I/O accesses patterns.
+First, we choose the zipf-distribution (with $\theta=1.1$) which is a highly skewed long-tailed distribution.
+This means that only a few objects are accessed frequently and the most objects are accessed rarely.
+It is therefore a cache-friendly case.
+Such an access distribution is common, for example, with web caches and databases.
+
+Secondly, we have chosen the normal distribution.
+The reason for this is that the I/O accesses are not as centered as compared to the zipf-distribution.
+Therefore more cache misses can occur.
+
+The third distribution is a zoned-distribution which is defined by 
+how many accesses should fall within a range of the file.
+For our case we defined that 60\% of accesses should be in the first 10\%,
+30\% of accesses should be in the next 10\%, 8\% of accesses should be in the next 10\% and
+2\% of accesses should be in the last 10\%.
+Like the normal-distribution, the accesses for the 
+zoned-distribution are more widely distributed than in the zipf-distribution.
+
+The last distribution is the uniform distribution.
+With uniform distribution, the accesses are evenly distributed over the file.
+This case is therefore the worst case for cache replacement policies, 
+because there is no reason to prefer to keep certain entries in the cache, 
+since all entries are equally likely.
+
+In \ref{lst:configuration haura}, we show the configuration file for Haure.
+The cache size has been set at 1GiB, which is relatively small to better 
+represent the performance of the different cache replacement policies.
+If we set the cache capacity higher, the hit rate would be 100\% 
+in most cases or we would have to use very large I/O sizes to actually be able to detect differences.
 
 
+\newpage
 \section{Single threaded}
+\subsection{Random read only Benchmark}
+
+The \cref{fig:single 100p read} shows the benchmark for random read only workload for the different random distributions.
+For this case the hit rate for CLOCK and GCLOCK is nearly identical and both perform the best for all random distributions and file sizes. 
+CLOCK-Pro on the other has the lowest hit rate in all cases.
+Interestingly, is that ML-CLOCK hit rate slightly decreases with increased file size.
+This could mean that SLP in ML-CLOCK accuracy decreases for greater workloads. 
 
 \begin{figure}[H]
 	\centering
@@ -1488,9 +1489,23 @@ Fio 3.33 was used generate I/O workloads.
 		\label{fig:randread uniform}
 	\end{subfigure}
 	\caption{These figures show the hit-rate file-size diagram for each implemented cache replacement policy for random read-only workload with different 				random distributions.}
+	\label{fig:single 100p read}
 \end{figure}
 
-%-------------------------------------------------------
+\newpage
+\subsection{Random 90\% read and 10\% write Benchmark}
+
+The next benchmark is for random 90\% read and 10\% write operations
+and is shown in \cref{fig:single 90p read}.
+In contrast to the read-only case, we have a significantly different result.
+Partly, this is because write operation means that entries are copied for the write and thus are in the modified state and pinned
+which leads to the decreasing hit rate for larger file sizes.
+Also, we configured fio to perform synchronization operation after 131072 I/O operations and during this 
+synchronization all cache entries are deleted.
+Thus, the cache must be refilled and each newly inserted entry does not count as a cache miss.
+This leads to a hit rate of 100\% for small file sizes.
+For larger file sizes ML-CLOCK outperform the other cache replacement policies.
+CLOCK, GCLOCK and CLOCK-Pro have almost the same hit rate.
 
 \begin{figure}[H]
 	\centering
@@ -1518,9 +1533,19 @@ Fio 3.33 was used generate I/O workloads.
 		\label{fig:rw_90to10  uniform}
 	\end{subfigure}
 	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 90\% read 10\% write workload with different random distributions.}
+	\label{fig:single 90p read}
 \end{figure}
 
-%-------------------------------------------------------
+\newpage
+\subsection{Random 50\% read and 50\% write Benchmark}
+
+The last single threaded benchmark is for random 50\% read and 50\% write operations,
+as shown in \cref{fig:single 50p read}.
+The increased write operations results in a lower hit rate for all cache replacement policies which further 
+decreases as the file size increases.
+As with the previous benchmark, ML-CLOCK outperforms the other cache replacement strategies and
+CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
+
 
 \begin{figure}[H]
 	\centering
@@ -1548,7 +1573,12 @@ Fio 3.33 was used generate I/O workloads.
 		\label{fig:rw_90to10  uniform}
 	\end{subfigure}
 	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 50\% read 50\% write workload with different random distributions.}
+	\label{fig:single 50p read}
 \end{figure}
+
+
+
+
 
 %-------------------------------------------------------
 
@@ -1562,38 +1592,144 @@ Fio 3.33 was used generate I/O workloads.
 
 
 \section{Multi threaded}
+\subsection{Random read only Benchmark}
 
-- why the split of workloads
-\todo[inline]{update ylimits for plots}
+%\cref{fig:multi zipf read only}, \cref{fig:multi normal read only}, \cref{fig:multi zoned read only} and \cref{fig:multi uniform read only}
+\cref{fig:multi zipf read only} to \cref{fig:multi uniform read only}
+show the results for the read only benchmark for the different distribution at different thread counts.
+As in the single threaded case, CLOCK and GCLOCK have a nearly equal hit rate and outperform the other two cache policies.
+Also CLOCK-Pro has the worst performance across all distributions and file sizes.
 
-\subsection{Zipf-Distribution Workloads}
 \begin{figure}[H]
 	\centering
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_16_gb_randread_zipf.jpg}		
 		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
+		\label{fig:read 16 zipf}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_32_gb_randread_zipf.jpg}		
 		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
+		\label{fig:read 32 zipf}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_64_gb_randread_zipf.jpg}		
 		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
+		\label{fig:read 64 zipf}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_128_gb_randread_zipf.jpg}		
 		\caption{128 GiB file size}
+		\label{fig:read 128 zipf}
+	\end{subfigure}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for zipf-distribution random read only workload.}
+	\caption{Zipf-distribution, read only workload}
+	\label{fig:multi zipf read only}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_normal.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10 16 normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_normal.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10 32 normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_normal.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10 64 normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_normal.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10 128 normal}
+	\end{subfigure}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random read only workload.}
+	\caption{Normal-distribution, read only workload}
+	\label{fig:multi normal read only}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_zoned.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_zoned.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_zoned.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_zoned.jpg}		
+		\caption{128 GiB file size}
 		\label{fig:rw_90to10  uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for zipf-distribution random read only workload.}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random read only workload.}
+	\caption{Zoned-distribution, read only workload}
+	\label{fig:multi zoned read only}
 \end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_randread_uniform.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_90to10  zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_randread_uniform.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_90to10  normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_randread_uniform.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_90to10  zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_randread_uniform.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_90to10  uniform}
+	\end{subfigure}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random read only workload.}
+	\caption{Uniform-distribution, read only workload}
+	\label{fig:multi uniform read only}
+\end{figure}
+
+
+\subsection{Random 90\% read and 10\% write Benchmark}
+
+For the random 90\% read and 10\% write Benchmark the results are not as clear as in the read only benchmark, \cref{fig:multi zipf rw_90to10} to 
+\cref{fig:multi uniform rw_90to10}.
+There is no policy that clearly outperforms the other.
+ML-CLOCK has a good performance for low thread counts and for zipf- and normal-distribution.
+But for 16 threads and uniform distribution ML-CLOCK shows significantly worse performance than the other policies.
+Also, CLOCK-Pro which was outperformed in the single threaded benchmarks, performs best in some cases, namely \cref{fig:rw_90to10 128 zoned} for 4 threads.
+Also, CLOCK and GCLOCK who have shown similar performances so far, now differ from each other for the normal- and zoned-distribution workload.
 
 \begin{figure}[H]
 	\centering
@@ -1620,66 +1756,9 @@ Fio 3.33 was used generate I/O workloads.
 		\caption{128 GiB file size}
 		\label{fig:rw_90to10  uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for zipf-distribution random 90\% read 10\% write workload.}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zipf.jpg}		
-		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zipf.jpg}		
-		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zipf.jpg}		
-		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zipf.jpg}		
-		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
-	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 50\% read 50\% write workload.}
-\end{figure}
-
-%----------------------------------------------
-
-\subsection{Normal-Distribution Workloads}
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_16_gb_randread_normal.jpg}		
-		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_32_gb_randread_normal.jpg}		
-		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_64_gb_randread_normal.jpg}		
-		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_128_gb_randread_normal.jpg}		
-		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
-	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random read only workload.}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for zipf-distribution random 90\% read 10\% write workload.}
+	\caption{Zipf-distribution, random 90\% read 10\% write only workload}
+	\label{fig:multi zipf rw_90to10}
 \end{figure}
 
 \begin{figure}[H]
@@ -1687,87 +1766,29 @@ Fio 3.33 was used generate I/O workloads.
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_normal.jpg}		
 		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
+		\label{fig:rw_90to10 16 normal}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_normal.jpg}		
 		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
+		\label{fig:rw_90to10 32 normal}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_normal.jpg}		
 		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
+		\label{fig:rw_90to10 64 normal}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_normal.jpg}		
 		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
+		\label{fig:rw_90to10 128 normal}
 	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 90\% read 10\% write workload.}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_normal.jpg}		
-		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_normal.jpg}		
-		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}		
-		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_normal.jpg}		
-		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
-	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 50\% read 50\% write workload.}
-\end{figure}
-
-
-%----------------------------------------------
-
-\subsection{Zoned-Distribution Workloads}
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_16_gb_randread_zoned.jpg}		
-		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_32_gb_randread_zoned.jpg}		
-		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_64_gb_randread_zoned.jpg}		
-		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_128_gb_randread_zoned.jpg}		
-		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
-	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random read only workload.}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 90\% read 10\% write workload.}
+	\caption{Normal-distribution, random 90\% read 10\% write only workload}
+	\label{fig:multi normal rw_90to10}
 \end{figure}
 
 \begin{figure}[H]
@@ -1775,86 +1796,29 @@ Fio 3.33 was used generate I/O workloads.
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zoned.jpg}		
 		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
+		\label{fig:rw_90to10 16 zoned}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zoned.jpg}		
 		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
+		\label{fig:rw_90to10 32 zoned}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zoned.jpg}		
 		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
+		\label{fig:rw_90to10 64 zoned}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zoned.jpg}		
 		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
+		\label{fig:rw_90to10 128 zoned}
 	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random 90\% read 10\% write workload.}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zoned.jpg}		
-		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zoned.jpg}		
-		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zoned.jpg}		
-		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zoned.jpg}		
-		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
-	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random 50\% read 50\% write workload.}
-\end{figure}
-
-%----------------------------------------------
-
-\subsection{Uniform-Distribution Workloads}
-\begin{figure}[H]
-	\centering
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_16_gb_randread_uniform.jpg}		
-		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_32_gb_randread_uniform.jpg}		
-		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_64_gb_randread_uniform.jpg}		
-		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.4\textwidth}
-		\includegraphics[width=\textwidth]{multi_128_gb_randread_uniform.jpg}		
-		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
-	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random read only workload.}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random 90\% read 10\% write workload.}
+	\caption{Zoned-distribution, random 90\% read 10\% write only workload}
+	\label{fig:multi zoned rw_90to10}
 \end{figure}
 
 \begin{figure}[H]
@@ -1862,27 +1826,131 @@ Fio 3.33 was used generate I/O workloads.
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_uniform.jpg}		
 		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
+		\label{fig:rw_90to10 16 uniform}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_uniform.jpg}		
 		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
+		\label{fig:rw_90to10 32 uniform}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_uniform.jpg}		
 		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
+		\label{fig:rw_90to10 64 uniform}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_uniform.jpg}		
 		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
+		\label{fig:rw_90to10 128 uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random 90\% read 10\% write workload.}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random 90\% read 10\% write workload.}
+	\caption{Uniform-distribution, random 90\% read 10\% write only workload}
+	\label{fig:multi uniform rw_90to10}
+\end{figure}
+
+\newpage
+\subsection{Random 50\% read and 50\% write Benchmark}
+
+The last benchmark is for random 50\% read and 50\% write operations, \cref{fig:multi zipf rw_50to50} to 
+\cref{fig:multi uniform rw_50to50}.
+It is notable that CLOCK-Pro again performs better than in single threaded and multi threaded read only benchmarks.
+Especially for 64GB and 128GB file size and 8 to 16 threads CLOCK-Pro mostly performs best.
+ML-CLOCK on the other hand, has good performance for zipf-distribution and lower thread count.
+But for higher thread count ML-CLOCK perform mostly worser than the other cache replacement policies.
+Furthermore, the performance of CLOCK and GCLOCK, with the exception of uniform-distribution, 
+is more distinct from each other.
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zipf.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_50to50 16 zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zipf.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_50to50 32 zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zipf.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_50to50 64 zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zipf.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_50to50 128 zipf}
+	\end{subfigure}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 50\% read 50\% write workload.}
+	\caption{Zipf-distribution, random 50\% read 50\% write only workload}
+	\label{fig:multi zipf rw_50to50}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_normal.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_50to50 16 normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_normal.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_50to50 32 normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_50to50 64 normal}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_normal.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_50to50 128 normal}
+	\end{subfigure}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for normal-distribution random 50\% read 50\% write workload.}
+	\caption{Normal-distribution, random 50\% read 50\% write only workload}
+	\label{fig:multi normal rw_50to50}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zoned.jpg}		
+		\caption{16 GiB file size}
+		\label{fig:rw_50to50 16 zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zoned.jpg}		
+		\caption{32 GiB file size}
+		\label{fig:rw_50to50 32 zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zoned.jpg}		
+		\caption{64 GiB file size}
+		\label{fig:rw_50to50 64 zoned}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zoned.jpg}		
+		\caption{128 GiB file size}
+		\label{fig:rw_50to50 128 zoned}
+	\end{subfigure}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for zoned-distribution random 50\% read 50\% write workload.}
+	\caption{Zoned-distribution, random 50\% read 50\% write only workload}
+	\label{fig:multi zoned rw_50to50}
 \end{figure}
 
 \begin{figure}[H]
@@ -1890,32 +1958,38 @@ Fio 3.33 was used generate I/O workloads.
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_uniform.jpg}		
 		\caption{16 GiB file size}
-		\label{fig:rw_90to10  zipf}
+		\label{fig:rw_50to50 16 uniform}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_uniform.jpg}		
 		\caption{32 GiB file size}
-		\label{fig:rw_90to10  normal}
+		\label{fig:rw_50to50 32 uniform}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_uniform.jpg}		
 		\caption{64 GiB file size}
-		\label{fig:rw_90to10  zoned}
+		\label{fig:rw_50to50 64 uniform}
 	\end{subfigure}
 	\hfill
 	\begin{subfigure}{0.4\textwidth}
 		\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_uniform.jpg}		
 		\caption{128 GiB file size}
-		\label{fig:rw_90to10  uniform}
+		\label{fig:rw_50to50 128 uniform}
 	\end{subfigure}
-	\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random 50\% read 50\% write workload.}
+	%\caption{These figures show the hit-rate for each implemented cache replacement policy for uniform-distribution random 50\% read 50\% write workload.}
+	\caption{Uniform-distribution, random 50\% read 50\% write only workload}
+	\label{fig:multi uniform rw_50to50}
 \end{figure}
+
 
 \section{Summary}
 
 -> coming soon
+
+-> mention why ML-CLOCK could have problems with higher thread count
+-> also CLOCK-Pro has different strategy for pinned entry, could maybe a reason why CLOCK-Pro performs better 
 
 \chapter{Conclusion}
 \label{cha:conclusion}
@@ -1938,11 +2012,64 @@ Fio 3.33 was used generate I/O workloads.
 
 \appendix
 
-%\chapter{Appendix}
-%\label{cha:appendix}
+\chapter{Appendix}
+\label{cha:appendix}
 
 % could also be ad the beginning
 % implement acronyms or list of Abbreviations
+
+\begin{lstlisting}[mathescape=true,caption=Haura configuration file for benchmark runs,label=lst:configuration haura]
+{
+  "storage": {
+    "tiers": [
+      {
+        "top_level_vdevs": [
+          {
+            "path": "/home/cgrueneb/.cache/haura/cache.disk",
+            "direct": true
+          }
+        ],
+        "preferred_access_type": "Unknown"
+      }
+    ],
+    "queue_depth_factor": 20,
+    "thread_pool_size": null,
+    "thread_pool_pinned": false
+  },
+  "alloc_strategy": [
+    [
+      0
+    ],
+    [
+      1
+    ],
+    [
+      2
+    ],
+    [
+      3
+    ]
+  ],
+  "default_storage_class": 0,
+  "compression": "None",
+  "cache_size": 1073741824,
+  "access_mode": "OpenOrCreate",
+  "sync_interval_ms": null,
+  "migration_policy": null,
+  "metrics": null
+}
+
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
 
 %\setcounter{tocdepth}{1}
 %\listoffigures
