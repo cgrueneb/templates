@@ -1411,8 +1411,8 @@ As secondary storage, we used the home folder which is shared between all nodes 
 
 The performance of a cache depends on the I/O access patterns 
 Cache replacement policy should exploit this fact by 
-choosing which entries will be evicted and which will remain in the cache
- to avoid unnecessary cache misses.
+choosing which entries will be evicted and which will remain in the cache 
+to avoid unnecessary cache misses.
 
 To test the implemented cache replacement policies, 
 fio is used to create synthetic workloads and measure the cache hits
@@ -1445,6 +1445,35 @@ With uniform distribution, the accesses are evenly distributed over the file.
 This case is therefore the worst case for cache replacement policies, 
 because there is no reason to prefer to keep certain entries in the cache, 
 since all entries are equally likely.
+
+\cref{lst:fio jobfile} shows an example of an fio jobfile.
+The random distribution (lines 1-3), thread count (line 7) and size of I/O 
+(lines 12-13) vary depending on the benchmark.
+The file size is twice the actual size for I/O because with the use of  copy on write, 
+we have fragmentation and if we chose the file size to low the benchmark run can crash.
+The same random seed is used for each benchmark run (lines 5-6) and the block size 
+for the I/O operations is 1MiB (line 9).
+The fsync parameter (line 14) defines that after 131072 writes fio will synchronize the  
+data, so that all data that is currently copied for write will be actually written back.
+
+\bigskip
+
+\begin{lstlisting}[mathescape=true,caption=example fio jobfile, label=lst:fio jobfile]
+[test01]
+rw=randrw
+rwmixread=90
+random_distribution=zipf
+randrepeat=1
+randseed=937162211
+numjobs=4
+thread
+bs=1m
+direct=1
+ioengine=external:/home/cgrueneb/haura/fio-haura/src/fio-engine-haura.o
+size=16g
+filesize=32g
+fsync=131072
+\end{lstlisting}
 
 In \ref{lst:configuration haura}, we show the configuration file for Haure.
 The cache size has been set at 1GiB, which is relatively small to better 
@@ -2060,14 +2089,6 @@ is more distinct from each other.
 }
 
 \end{lstlisting}
-
-
-
-
-
-
-
-
 
 
 
