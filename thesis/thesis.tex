@@ -330,6 +330,7 @@ So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries 
 - should be mentioned because it important part of haura and $B^{\varepsilon}$-tree\\
 - used for easy creation of snapshots \\
 - described in \cite{patterson1995informed}\\
+- fragmentation aspect should be mentioned\\ 
 
 \section{Haura}
 \label{sec:haura}
@@ -1409,42 +1410,47 @@ As secondary storage, we used the home folder which is shared between all nodes 
 
 \section{Methodology}
 
-The performance of a cache depends on the I/O access patterns 
+The performance of a cache strongly depends on the I/O access patterns.
 Cache replacement policy should exploit this fact by 
 choosing which entries will be evicted and which will remain in the cache 
 to avoid unnecessary cache misses.
+So in order to test our implemented cache policies,
+we measure the cache hit rate for each cache replacement policy for different 
+random I/O access patterns.
 
-To test the implemented cache replacement policies, 
-fio is used to create synthetic workloads and measure the cache hits
-for a fixed size of I/O.
-We benchmark the following three workloads for different sizes.
+Fio is used to create synthetic random workloads for a fixed size of I/O.
+The following three workloads for different I/O sizes were selected.
 First, random 100\% read I/O operations, second random 90\% read and 10\% write I/O operations
 and third random 50\% read and 50\% write operations. 
 Furthermore, we benchmark for a single fio thread and multiple fio threads performing I/O operations.
 
-We choose the following distributions as random I/O accesses patterns.
-First, we choose the zipf-distribution (with $\theta=1.1$) which is a highly skewed long-tailed distribution.
+The selected patterns for random I/O accesses are the following distributions.
+First, the zipf-distribution (with $\theta=1.1$) which is a highly skewed long-tailed distribution.
 This means that only a few objects are accessed frequently and the most objects are accessed rarely.
-It is therefore a cache-friendly case.
+It is therefore a cache-friendly workload.
 Such an access distribution is common, for example, with web caches and databases.
 
-Secondly, we have chosen the normal distribution.
-The reason for this is that the I/O accesses are not as centered as compared to the zipf-distribution.
-Therefore more cache misses can occur.
+Next, we have selected the normal distribution.
+The reason for this is that compared to the Zipf distribution, 
+the I/O accesses are more evenly distributed and there is a pronounced peak, 
+but it is not as dominant as in the Zipf distribution.
+Therefore, more cache misses may occur and 
+the decision to evict is more relevant.
 
 The third distribution is a zoned-distribution which is defined by 
 how many accesses should fall within a range of the file.
 For our case we defined that 60\% of accesses should be in the first 10\%,
 30\% of accesses should be in the next 10\%, 8\% of accesses should be in the next 10\% and
 2\% of accesses should be in the last 10\%.
-Like the normal-distribution, the accesses for the 
-zoned-distribution are more widely distributed than in the zipf-distribution.
+As with the normal distribution, the accesses in the 
+zoned distribution is more dispersed than the zipf distribution.
 
 The last distribution is the uniform distribution.
-With uniform distribution, the accesses are evenly distributed over the file.
+With uniform distribution, the accesses are evenly distributed.
 This case is therefore the worst case for cache replacement policies, 
 because there is no reason to prefer to keep certain entries in the cache, 
 since all entries are equally likely.
+Hence, we use this case to evaluate performance under cache-unfriendly workloads.
 
 \cref{lst:fio jobfile} shows an example of an fio jobfile.
 The random distribution (lines 1-3), thread count (line 7) and size of I/O 
@@ -1455,6 +1461,7 @@ The same random seed is used for each benchmark run (lines 5-6) and the block si
 for the I/O operations is 1MiB (line 9).
 The fsync parameter (line 14) defines that after 131072 writes fio will synchronize the  
 data, so that all data that is currently copied for write will be actually written back.
+This is required to reduce fragmentation.
 
 \bigskip
 
@@ -1485,12 +1492,13 @@ in most cases or we would have to use very large I/O sizes to actually be able t
 \newpage
 \section{Single threaded}
 \subsection{Random read only Benchmark}
+\todo[inline]{correct the spelling of file size in plots}
 
 The \cref{fig:single 100p read} shows the benchmark for random read only workload for the different random distributions.
 For this case the hit rate for CLOCK and GCLOCK is nearly identical and both perform the best for all random distributions and file sizes. 
 CLOCK-Pro on the other has the lowest hit rate in all cases.
-Interestingly, is that ML-CLOCK hit rate slightly decreases with increased file size.
-This could mean that SLP in ML-CLOCK accuracy decreases for greater workloads. 
+It is noticeable that the hit rate of ML-CLOCK decreases slightly with increasing file size.
+This could mean that the accuracy of SLP in ML-CLOCK can decrease for certain workloads.
 
 \begin{figure}[H]
 	\centering
@@ -1533,8 +1541,8 @@ Also, we configured fio to perform synchronization operation after 131072 I/O op
 synchronization all cache entries are deleted.
 Thus, the cache must be refilled and each newly inserted entry does not count as a cache miss.
 This leads to a hit rate of 100\% for small file sizes.
-For larger file sizes ML-CLOCK outperform the other cache replacement policies.
-CLOCK, GCLOCK and CLOCK-Pro have almost the same hit rate.
+With increasing file size ML-CLOCK outperforms the other cache replacement policies for all random distributions.
+The performances of the CLOCK, GCLOCK and CLOCK-Pro are almost equal across all distributions and file sizes.
 
 \begin{figure}[H]
 	\centering
@@ -1570,11 +1578,13 @@ CLOCK, GCLOCK and CLOCK-Pro have almost the same hit rate.
 
 The last single threaded benchmark is for random 50\% read and 50\% write operations,
 as shown in \cref{fig:single 50p read}.
-The increased write operations results in a lower hit rate for all cache replacement policies which further 
-decreases as the file size increases.
-As with the previous benchmark, ML-CLOCK outperforms the other cache replacement strategies and
+The first thing to notice is that for all cache replacement policies the hit rates are lower than in the previous benchmark.
+This is a consequence of synchronization, which occurs more frequently with an increased proportion of write operations,
+since the cache is flushed with each synchronization. 
+The cache must therefore be rebuilt, which leads to more cache misses.
+Apart from the generally reduced hit rate, the results are similar to the previous benchmark.
+ML-CLOCK outperforms the other cache replacement strategies and
 CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
-
 
 \begin{figure}[H]
 	\centering
@@ -1605,10 +1615,6 @@ CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
 	\label{fig:single 50p read}
 \end{figure}
 
-
-
-
-
 %-------------------------------------------------------
 
 % not sure if I want to use this, don't have seq write for multi-threaded
@@ -1625,9 +1631,10 @@ CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
 
 %\cref{fig:multi zipf read only}, \cref{fig:multi normal read only}, \cref{fig:multi zoned read only} and \cref{fig:multi uniform read only}
 \cref{fig:multi zipf read only} to \cref{fig:multi uniform read only}
-show the results for the read only benchmark for the different distribution at different thread counts.
+show the results for the read only benchmark for the different distribution at various thread counts.
+The results have some commonalities with the single-threaded read-only benchmark.
 As in the single threaded case, CLOCK and GCLOCK have a nearly equal hit rate and outperform the other two cache policies.
-Also CLOCK-Pro has the worst performance across all distributions and file sizes.
+Also CLOCK-Pro has the worst performance across all distributions, file sizes and thread counts.
 
 \begin{figure}[H]
 	\centering
@@ -1752,13 +1759,15 @@ Also CLOCK-Pro has the worst performance across all distributions and file sizes
 
 \subsection{Random 90\% read and 10\% write Benchmark}
 
-For the random 90\% read and 10\% write Benchmark the results are not as clear as in the read only benchmark, \cref{fig:multi zipf rw_90to10} to 
-\cref{fig:multi uniform rw_90to10}.
+For the random 90\% read and 10\% write Benchmark the results, 
+\cref{fig:multi zipf rw_90to10} to \cref{fig:multi uniform rw_90to10}, 
+are not as clear as in the read only benchmark.
 There is no policy that clearly outperforms the other.
 ML-CLOCK has a good performance for low thread counts and for zipf- and normal-distribution.
 But for 16 threads and uniform distribution ML-CLOCK shows significantly worse performance than the other policies.
-Also, CLOCK-Pro which was outperformed in the single threaded benchmarks, performs best in some cases, namely \cref{fig:rw_90to10 128 zoned} for 4 threads.
-Also, CLOCK and GCLOCK who have shown similar performances so far, now differ from each other for the normal- and zoned-distribution workload.
+CLOCK-Pro, which was outperformed in the single-thread benchmarks, also performed best in some cases, specifically \cref{fig:rw_90to10 128 zoned} for 4 threads.
+Also, CLOCK and GCLOCK, which had previously shown similar performance, 
+now differ in normal- and zoned-distribution workload.
 
 \begin{figure}[H]
 	\centering
@@ -1885,10 +1894,21 @@ Also, CLOCK and GCLOCK who have shown similar performances so far, now differ fr
 
 The last benchmark is for random 50\% read and 50\% write operations, \cref{fig:multi zipf rw_50to50} to 
 \cref{fig:multi uniform rw_50to50}.
-It is notable that CLOCK-Pro again performs better than in single threaded and multi threaded read only benchmarks.
-Especially for 64GB and 128GB file size and 8 to 16 threads CLOCK-Pro mostly performs best.
-ML-CLOCK on the other hand, has good performance for zipf-distribution and lower thread count.
-But for higher thread count ML-CLOCK perform mostly worser than the other cache replacement policies.
+Here the increased number of write operations again leads to lower hit rates, 
+as in the corresponding single threaded benchmark.
+%It is notable that CLOCK-Pro again performs better than in single threaded and multi threaded read only benchmarks.
+%Especially for 64GB and 128GB file size and 8 to 16 threads CLOCK-Pro mostly performs best.
+It is noteworthy that CLOCK-Pro performs better than in the single-thread 
+benchmarks or the multi-thread read-only benchmarks.
+In particular, CLOCK-Pro performs best with 64 GB and 128 GB 
+file sizes and 8 to 16 threads.
+ML-CLOCK, on the other hand, has mixed performance.
+With zipf-distribution and low thread count, the performance is good.
+However, with a higher thread count and file sizes, the performance of ML-CLOCK 
+is usually worse than that of the other cache replacement strategies.
+A possible explanation for this could be that ML-CLOCK has difficulty learning the 
+underlying access pattern for a higher number of threads and 
+therefore performs worse than the other cache replacement policies in such workloads.
 Furthermore, the performance of CLOCK and GCLOCK, with the exception of uniform-distribution, 
 is more distinct from each other.
 
@@ -2015,10 +2035,31 @@ is more distinct from each other.
 
 \section{Summary}
 
--> coming soon
+We have considered 3 workloads for the performance evaluation,
+random reads only and two mixed workloads with different ratios of random reads to random writes for different I/O sizes
+and measured the hit rate.
+Four different random distributions were used to simulate different I/O behavior.
+First, the zipf-distribution as a cache friendly workload that often occurs in web caches and databases.
+Then the normal- and zoned-distribution, which have a larger dispersion than the zipf-distribution.
+And last, we used the uniform distribution, which is a cache unfriendly workload since each entry
+has the same accesses probability.
+Furthermore, we evaluated these cases for different thread counts performing I/O.
 
--> mention why ML-CLOCK could have problems with higher thread count
--> also CLOCK-Pro has different strategy for pinned entry, could maybe a reason why CLOCK-Pro performs better 
+In the single threaded benchmarks, ML-CLOCK outperform the other policies for the mixed workloads.
+However, CLOCK and GCLOCK performed the best for the read-only workload.
+CLOCK-Pro, on the contrary, performed worse in the read only workloads 
+but showed comparable performance to CLOCK and GCLOCK in the mixed workloads.
+
+The results of the multi-thread benchmarks are not as clear as those of the single-thread benchmarks.
+In read only workloads, CLOCK and GCLOCK perform best and CLOCK performs worst, as in the single threaded benchmark.
+For the mixed workloads, there is no cache replacement policy that outperforms the other.
+CLOCK-Pro, for example, has good performance at high thread counts and file sizes, but in a few cases has significantly 
+under performance at lower thread counts.
+Also, ML-CLOCK, which showed the best performance for mixed single threaded benchmarks, has 
+significantly lower performance for high thread counts and file sizes.
+Which could indicate that ML-CLOCK has problems to recognize the I/O access pattern for higher thread counts and file sizes.
+Even the performance of CLOCK and GCLOCK, which was almost the same in the single-thread and multi-thread read-only benchmark, shows significant 
+differences in the mixed multi-thread benchmark.
 
 \chapter{Conclusion}
 \label{cha:conclusion}
