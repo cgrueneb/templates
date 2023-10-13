@@ -429,8 +429,8 @@ The idea of LRU is that whenever an entry needs to be evicted, the entry that ha
 All cache entries are stored in a priority queue, usually implemented as doubly linked list, sorted by there last access time.
 Each new entry is insert at the front of the priority queue and the entry at the back of the priority queue is always selected for eviction.
 In case of a cache hit, the entry that is in the priority queue is placed at the front of the queue.
-For the implementation it is too costly to always store the last access time for each entry, instead an 
-approximation like age bits are used.
+%For the implementation it is too costly to always store the last access time for each entry, instead an 
+%approximation like age bits are used.
 
 %In general, it is too costly to keep track of the last access time, and only approximate values, such as age bits, are used instead.
 % marked but not clear what I should change, not clear enough?
@@ -735,10 +735,11 @@ If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
 The incomplete state, as seen in \cref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
 If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
+% hier nochmal umschreiben
 
 \bigskip
 
-\begin{lstlisting}[language=Rust,mathescape=true,caption={ObjRef enumeration, parameter P equals \&ObjectPointer<D>},
+\begin{lstlisting}[language=Rust,mathescape=true,caption={ObjRef enumeration, parameter P equals ObjectPointer<D>},
 	label=lst:ObjRef enumeration]
 pub enum ObjRef<P> {
     Incomplete(P),
