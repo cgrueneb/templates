@@ -94,7 +94,7 @@
 \titlehead{\centering\includegraphics[width=0.66\textwidth]{OVGU-INF}}
 
 \subject{Bachelor/Master Thesis}
-\title{Title}
+\title{Evaluation and Implementation of Cache Replacement Policies for an Object Store with Tired Storage}
 
 \author{
 Author\\
@@ -241,6 +241,9 @@ Each extra copy and move of data consumes additional power.
 And on the other hand, if we have redundant data, there is an additional effort to keep the data consistent.
 For example, when a cache entry is modified, we need to write the data back to the original location, and we need to prevent multiple tasks from writing to a cache entry at the same time.
 
+% could insert a summary of the first subsection to outline the problem
+
+
 \section{Hierarchical Storage Management}
 
 %- some similarities to caching
@@ -272,7 +275,21 @@ Thus, no write back is necessary.
 - new is direct comparison of clock based cache replacement algorithms\\
 
 \section{Outline}
-- description of the structure of the following work\\
+%- description of the structure of the following work\\
+
+%In \cref{cha:introduction}, we presented the context of this thesis and stated the research objectives.
+
+We presented the context of this thesis and stated the research objectives in \cref{cha:introduction}.
+Then, in \cref{cha:background}, we provide an overview of topics that are important for understanding this thesis.
+For this purpose we will first discuss topics related to Haura, in particular $B^{\varepsilon}$-tree,
+which is the underlying data structure of Haura and the copy on write resource management technique.
+We then discuss the basic cache replacement policies and strategies for improving them.
+Afterwards, in \cref{cha:related work}, we give a brief overview of work related to the topic of this thesis.
+Next, in \cref{cha:design and implementation}, we describe the newly implemented cache replacement policies 
+and explain the changes we had to make to Haura.
+In \cref{cha:evaluation}, we design and conduct an evaluation of the newly implemented cache replacement policies.
+Finally, in \cref{cha:conclusion}, we summarize the thesis and our results in a conclusion and
+ also suggest potential topics for future work.
 
 % 5-10%, ca. 2-5 Seiten 
 
@@ -327,7 +344,7 @@ So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries 
 \section{Copy on Write}
 \label{sec:copy on write}
 
-- should be mentioned because it important part of haura and $B^{\varepsilon}$-tree\\
+- should be mentioned because it is an important part of haura and $B^{\varepsilon}$-tree\\
 - used for easy creation of snapshots \\
 - described in \cite{patterson1995informed}\\
 - fragmentation aspect should be mentioned\\ 
