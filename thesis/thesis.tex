@@ -172,7 +172,7 @@ Even though the rates of increase in single-core performance have slowed down an
 \begin{figure}[ht]
 	\centering
 	\includegraphics[scale=0.45]{processor_memory_gap.pdf}
-	\caption{Processor-Memory gap, figure from \cite{cpu-mem-gap}}
+	\caption{Processor-Memory gap \cite{cpu-mem-gap}}
 		\label{fig:processor memory gap}
 \end{figure}
 
@@ -184,10 +184,10 @@ The goal of the memory hierarchy is to develop systems that have enough fast mem
 \begin{figure}[ht]
 	\centering
 	\includegraphics[scale=0.6]{ComputerMemoryHierarchy.pdf}
-	\caption{Memory Hierarchy}
+	\caption{Memory Hierarchy \cite{wiki:xxx}}
 		\label{fig:memory hierarchy}
 \end{figure}
-\todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
+%\todo[inline]{check how to cite online sources, it is from wikipedia https://upload.wikimedia.org/wikipedia/commons/9/9d/ComputerMemoryHierarchy.png}
 
 \section{Caching}
 \label{sec:caching}
@@ -276,13 +276,14 @@ HSM on the other hand actually moves the data to the faster storage.
 Thus, no write back is necessary.
 
 \section{Contribution}
-% check if contribution or contributions is right
-- new is direct comparison of clock based cache replacement algorithms\\
+
+The objective of this thesis is to implement and evaluate different cache replacement policies 
+for a copy on write optimized hierarchical storage stack.
+It is of particular interest whether and how copy-on-write affects cache performance and 
+if specific policies can be recommended for certain use cases.
 
 \section{Outline}
 %- description of the structure of the following work\\
-
-%In \cref{cha:introduction}, we presented the context of this thesis and stated the research objectives.
 
 We presented the context of this thesis and stated the research objectives in \cref{cha:introduction}.
 Then, in \cref{cha:background}, we provide an overview of topics that are important for understanding this thesis.
@@ -306,7 +307,30 @@ Finally, in \cref{cha:conclusion}, we summarize the thesis and our results in a 
 % 10-20%, ca. 4-10 Seiten
 
 - next chapter gives a short overview of topics necessary to understand the following work\\
-%- \ref{caching}
+
+\section{Copy on Write}
+\label{sec:copy on write}
+%
+%- should be mentioned because it is an important part of haura and $B^{\varepsilon}$-tree\\
+%- used for easy creation of snapshots \\
+%- described in \cite{patterson1995informed}\\
+%- fragmentation aspect should be mentioned\\ 
+%- \cite{peterson2002data}
+
+Copy on write is a memory management technique that allows multiple processes to 
+share data as long as the data is not modified, instead of copying the data for each process. 
+When the data is modified, a copy is made to a different memory location and 
+the original data remains unchanged \cite{ha2022ccow}.
+Therefore, copy on write can significantly reduce the amount of memory used for shared data, 
+but at the cost of additional overhead when the data is modified.
+Copy on write is used for example in file systems and virtual memory management.
+Additionally, copy on write enables the creation of snapshots, which is a read only image of a 
+data collection that can be used as a backup or checkpoint to restore the state of a file system \cite{peterson2002data}.
+The main limitation of copy on write is the fragmentation of memory when copies are made.
+This is because the new copies can be scattered across a storage medium, which increases data access time and 
+results in increased memory usage as long as the original data and the copy are present.
+
+% could be adding a diagramm to show fragmentation but should be common knowledge 
 
 \section{$B^{\varepsilon}$-tree}
 \label{sec:tree}
@@ -346,13 +370,6 @@ These messages must be processed, but that does not mean they are flushed down i
 So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
 \todo[inline]{write a bit more detailed about this}
 
-\section{Copy on Write}
-\label{sec:copy on write}
-
-- should be mentioned because it is an important part of haura and $B^{\varepsilon}$-tree\\
-- used for easy creation of snapshots \\
-- described in \cite{patterson1995informed}\\
-- fragmentation aspect should be mentioned\\ 
 
 \section{Haura}
 \label{sec:haura}
@@ -704,6 +721,8 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 %clock-pro+ could also be a candidate for related work
 
 \section*{Summary}
+
+-> coming soon
 
 \chapter{Design and Implementation}
 \label{cha:design and implementation}
