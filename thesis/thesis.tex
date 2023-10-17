@@ -424,10 +424,16 @@ Single disk, multiple disks or RAID-like configurations can be used.
 \section{Cache Replacement Policies}
 \label{sec:cache replacement policies}
 
-- introduction text needed
-- make reference to introduction, mentioned caching there
-- this should be mentioned here:\\
-Next, I will present three early developed cache replacement policies that are still in use, but also form the basis for further improved policies.
+Cache replacement policies are used to manage a cache. 
+Which means that cache replacement policies decide which entries are evicted in the occurrence of a cache miss.
+For this decision making, they can use additional metadata or data structures.
+Selecting an entry for eviction is non-trivial and significantly affects the performance of the cache.
+Since removing an entry that will soon be accessed again results in further cache misses.
+To minimize these subsequent cache misses, several cache replacement strategies have been developed.
+
+In this section, we first explain the theoretically optimal cache replacement policy, 
+and then we discuss three early developed policies that are still widely used and 
+also form the basis for further improved cache replacement policies.
 
 \subsection{Optimal Cache Replacement Policy}
 The theoretically optimal cache replacement policy is Bélády's algorithm (also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
@@ -529,7 +535,7 @@ many entries accessed only once, \cite{mahanti2000traffic}.
 \section{Improved Cache Replacement Policies}
 \label{sec:improved cache replacement policies}
 
-All cache replacement policies presented in the last section have significant drawbacks.
+All cache replacement policies presented in the last section have drawbacks.
 Bélády's algorithm must know the access pattern in advance and has therefore mostly theoretical value.
 FIFO suffers from the Bélády's anomaly and has higher miss rates then the other presented policies.
 LRU has problems with access patterns that have only weak locality, such as loop or scan patterns.
