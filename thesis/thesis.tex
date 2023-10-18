@@ -246,9 +246,6 @@ Each extra copy and move of data consumes additional power.
 And on the other hand, if we have redundant data, there is an additional effort to keep the data consistent.
 For example, when a cache entry is modified, we need to write the data back to the original location, and we need to prevent multiple tasks from writing to a cache entry at the same time.
 
-% could insert a summary of the first subsection to outline the problem
-
-
 \section{Hierarchical Storage Management}
 
 %- some similarities to caching
@@ -275,6 +272,8 @@ So if the copy in cache is changed, the changes must be written back to the orig
 HSM on the other hand actually moves the data to the faster storage.
 Thus, no write back is necessary.
 
+
+% could insert a summary of the first subsection to outline the problem
 \section{Contribution}
 
 The objective of this thesis is to implement and evaluate different cache replacement policies 
@@ -306,7 +305,14 @@ Finally, in \cref{cha:conclusion}, we summarize the thesis and our results in a 
 % nicht zu weit ausschweifen
 % 10-20%, ca. 4-10 Seiten
 
-- next chapter gives a short overview of topics necessary to understand the following work\\
+%- next chapter gives a short overview of topics necessary to understand the following work\\
+
+In this chapter we explain topics that are necessary for the understanding of the work.
+First, we describe the resource management technique copy on write. Then we discuss the $B^{\varepsilon}$-tree, 
+which is a write optimized variant of the B-Tree.
+Next, an overview of the hierarchical storage stack Haura is given, 
+which uses the $B^{\varepsilon}$-tree as its central data structure.
+We then present several basic cache replacement policies and strategies for improving them.
 
 \section{Copy on Write}
 \label{sec:copy on write}
@@ -407,8 +413,7 @@ The \emph{database layer} sends messages to the $B^{\varepsilon}$ trees consisti
 Key-value pairs are stored in leave nodes and key-message nodes are stored in inner nodes of the tree.
 Each node is an object for the \emph{Data Management Layer} and is tracked individually.
 
-The \emph{Data Management Layer}(DML) manages objects for the \emph{Tree Layer} and \emph{database layer} which means cache objects in memory, 
-track modifications to objects and write-back modified objects.
+The \emph{Data Management Layer}(DML) manages objects for the \emph{Tree Layer} and \emph{database layer} which includes caching objects in memory, track modifications to objects and write back modified objects to storage devices.
 Main part of the DML is the Data Management Unit (DMU).
 The DMU is shared by all trees and ensures that no irregular state can be reached.
 It takes care of critical disk management such as block allocation.
@@ -557,14 +562,14 @@ which we will discuss in more detail below
 (strategies 1.-3. from \cite{10.1145/511399.511340}, strategy 4. from \cite{rodriguez2021learning}).
 
 
-\subsection{Explicit User-Level Hints}
+\subsection{Explicit User Level Hints}
 
 The first improvement strategy is through user-level hints.
 This idea was proposed by \cite{cao1994application} and \cite{patterson1995informed}.
 The idea is that the user provides hints about which cache entries have a low probability of being accessed in the near future.
 The problem with this approach is that the user must understand the access pattern in order to provide appropriate hints, which increases 
 the required programming effort \cite{10.1145/511399.511340}.
-Therefore, user-level hints can be a solution in special cases,
+Therefore, user level hints can be a solution in special cases,
 but they are less suitable as a general cache replacement policy.
 
 \subsection{Utilizing Deeper History Information}
@@ -640,8 +645,8 @@ The disadvantage is that we still have to predefine the ratio between the capaci
 Another example is Adaptive Replacement Cache (ARC) \cite{270366}.
 ARC uses two LRU priority queues, $L_1$ for entries entries who are accessed only once in the recent past and $L_2$ for entries accessed at least twice in the recent past.
 So $L_1$ measures recency and $L_2$ the frequency.
-For a cache with the capacity for $c$ number of entries and each queue can also hold $c$ number of entries.
-The cache saves $2c$ entries, of which $c$ are non-resident entries.
+For a cache with the capacity for $c$ number of entries, each queue, $L_1$ and $L_2$, can also hold $c$ number of entries.
+Thus the cache saves $2c$ entries, of which $c$ are non-resident entries.
 To achieve adaptability the number of resident entries for each queue is not fixed and changes according to the workload.
 Each time a cache hit occurs on a non-resident entry in one of the queues, the number of resident entries for that queue is increased
 depending on the ratio between the number of non-resident entries of each queue.
@@ -659,20 +664,70 @@ An example of this strategy is fuzzy page replacement algorithm by \cite{akbari2
 fuzzy c-means, an unsupervised machine learning technique, to find clusters in all cache entries based on the frequency, recency and time difference between two consecutive accesses for each entry.
 Each time an entry needs to be evicted, the entry with the greatest distance to all cluster centers is evicted.
 
-Another example is proposed by \cite{choi2022learning} which uses Seq2Seq network, a type of recurrent neural network designed for handling sequence data.
+Another example is proposed by \cite{choi2022learning} which uses Seq2Seq network, 
+a type of recurrent neural network designed for handling sequence data.
 The history of the last accessed cache entries is used to predict a sequence of the future accesses.
 The predicted sequence is then applied to conventional cache replacement algorithms, like LFU or LRU, to prevent unnecessary evictions. 
-
 
 \section{Summary}
 \label{sec:summary}
 
-- heuristics mostly work for the intended cases but have problems in other cases, give examples for that\\
-- machine learning the new hype\\
-- many new papers for this topic \\
-- have the chance to actual be adoptable to all possible access patterns and significant increase miss ratio for wide array of use cases \\
-- but can have higher overhead compared to simple heuristics\\
-- open question which approach is best for machine learning techniques.
+The research question of this thesis concerns cache performance for a copy on write optimized hierarchical storage stack.
+As an example of such a storage stack we use Haura, which uses $B^{\varepsilon}$-tree, a write optimized version of B-tree,
+as the underlying data structure.
+The management of the data in Haura is centrally performed by the DMU, the Data Management Unit.
+For this purpose, the DMU uses a cache containing the data that is currently being used. 
+
+The main difficulty with caches is how to decide which entry to evict.
+Because evicting entries that will be needed in the near future leads to further 
+cache misses and thus to lower cache performance.
+Therefore, cache replacement policies are used to decide which entry should be evicted from the cache.
+Cache replacement policies can use additional data structures or per-entry metadata to guide their decision.
+Various cache replacement policies have been developed, which can range from rather simple queue based policies to policies based 
+on complex heuristics or machine learning.
+
+We looked at four early developed policies.
+The first was  the Bélády's algorithm or optimale cache replacement policy,
+which had only theoretical value and can be used to determine the optimal achievable cache performance 
+after the execution of an application.
+The next policy was FIFO, which always evicts the entry that has been in the cache the longest.
+FIFO is easy to implement, but suffers from the Bélády's anomaly and poor performance on many use cases. 
+LRU uses recency to decide which entry should be evicted and shows good performance in cases of strong locality.
+The disadvantage of LRU is its poor performance under weak locality, such as loop and scan access patterns.
+The last policy was LFU, which uses frequency information for the eviction decision.
+LFU has good performance in case of skewed accesses distributions and 
+also performs better than LRU on loop and scan accesses patterns.
+The disadvantage of LFU is the higher complexity compared to LRU and FIFO.
+
+All four cache replacement strategies we examined have some weaknesses.
+Therefore, we considered strategies for improved cache replacement policies.
+We first considered explicit user level hints, which can be useful in certain cases, 
+but are not portable to different hardware or adoptable to different use cases.
+Hence, they are not suitable as a general cache replacement policy.
+
+Another strategy we considered was using more historical information.
+This could either mean to track more meta data for each cache entry, like LRFU, or the use
+of ghost entries, which are entries where only the meta data or an reference to the data stays in cache, like 2Q.
+
+The third strategy, we considered was to identify specific access patterns and adopt the behavior of the cache accordingly.
+One example for this strategy is LIRS, which uses the Inter-Reference Recency to categorize the cache entries in hot and cold entries.
+LIRS keeps the hot entries in cache and prefers to evict the cold entries.
+Another example is ARC, which uses two queues.
+One for entries that have been accessed once in the recent past, and a 
+second queue for entries that have been accessed at least twice in the recent past.
+The ratio between stored entries for both queues is not fixed and heuristic is used to decide which queue should store 
+more entries.
+This allows ARC to be adapted to different use cases.
+
+The last strategy we considered, using machine learning to make eviction decisions, 
+is a relatively new trend that has emerged in recent years.
+The used ml-techniques ranges from simple models with low overhead, which are suitable for online learning, to
+more sophisticated techniques with pre-trained neural networks.
+
+The replacement of cache memories is a current research topic, which is becoming even more important 
+due to the widening processor memory gap.
+New opportunities are emerging through the use of increasingly better ML techniques.
+Nevertheless, there is still no general best policy that works in all use cases and can adapt to changing accesses patterns.
 
 \chapter{Related Work}
 \label{cha:related work}
@@ -680,51 +735,97 @@ The predicted sequence is then applied to conventional cache replacement algorit
 % was hab ich anders gemacht bzw. wie sind andere Autoren an das Thema ran gegangen
 % 5-10%, ca 2-5 Seiten
 
+In this chapter, we present related work.
+In addition to \cref{cha:background}, we present current cache replacement strategies aimed at increasing scalability 
+and to be used in multi threaded applications.
+
 \section*{It's Time to Revisit LRU vs FIFO by \cite{eytan2020s}}
 
-Earlier studies between LRU and FIFO performance are probably not sufficient for newer use cases such as web cache, ML ...
-Because the workloads and the sizes of caches changed dramatically over time.
-The general guide line LRU is better then FIFO isn't true in all cases.
-When the cache is to big to hold it completely in main memory FIFO is better because only the end where the eviction happens and the start of the FIFO queue need to be in main memory. So the simpler structure is more suitable in this case than LRU.
-LRU still better choice when the latency of memory is the dominating factor.
+This paper the authors proposes to reevaluate the assumption that LRU 
+has better performance than FIFO, as stated in \cite{van1992lru}.
+There were two main reasons for this reevaluation.
+First, caches are getting increasingly larger and managing the cache metadata can not be done entirely in main memory.
+As a result, the management will be partially shifted to persistent storage media.
+In this cases FIFO can be the better choice since only the front and the end of the FIFO queue need to be in main memory
+and no additional metadata has to be updated.
+This means that the largest part of the FIFO queue can be swapped out of main memory.
+The second reason is that the emergence of new workloads could mean that old assumptions no longer apply. 
+Cache replacement policies in the past were designed for workloads around memory, files and block storage. 
+But new workloads for big data and machine learning could have different characteristics.
+The authors concluded that, especially for large caches, FIFO may be a better choice than LRU because of the lower overhead. 
+However, for more traditional workloads where the cache fits in main memory, LRU is still the better choice.
 
 \section*{FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion by \cite{yang2023fifo}}
 
-Although FIFO is a simple to implement cache replacement algorithm with O(1) complexity for insertion and removal and therefore provides good throughput.
+Although FIFO is a simple to implement cache replacement algorithm with O(1) complexity for insertion and removal 
+and therefore provides good throughput and good scalability.
 The major drawback was the lower hit rate compared to LRU-based algorithms.
-The paper by \cite{van1992lru} proofed that LRU is better under the assumption of an independent reference model.
-But this paper \cite{yang2023fifo} shows that FIFO can achieve comparable performance to modern LRU based cache replacement algorithms.
-This study uses very large data sets/traces from different use cases.
-The key to achieve this is the use of Quick Demotion and Lazy Promotion.
-Quick Demotion is based from the observation that often recently insert entries also leave the cache quickly. So these new entries are insert in a smaller FIFO queue, 10\% of cache and also a ghost queue for evicted entries is used which only saves metadata not the actual entries. So if a new entries leaves the QD-queue it will be insert to ghost queue. If then an access to the same entry happens where the entry is in ghost the entry will be insert to main cache.
-Quick Demotion can be combined with different cache replacement algorithms not just FIFO.
-To some extend some cache replacement algorithms have some kind of  Quick demotion incorporated. 
-Lazy Promotion tries to maintain hot entries in cache with minimal overhead.
-To achieve this Promotion only happens at eviction not at access like LRU which decrease the handling of metadata. Example for this would be 2-bit Clock algorithm.
-This approach could be easy implemented by adding Quick Demotion and use 2-bit Clock as main cache.
-Different implementations for QD and LP possible can lead to many different modular algorithms. 
+The authors of this paper \cite{yang2023fifo} show that FIFO can achieve comparable performance to LRU based cache replacement algorithms.
+To improve FIFO they used Quick Demotion and Lazy Promotion.
+
+Quick Demotion is based on the observation that often newly insert entries also leave the cache quickly.
+To implement this, the cache is divided into a large main FIFO queue that covers 90\% of the capacity and a 
+smaller FIFO queue, the QD queue, that covers 10\% of the cache capacity.
+Furthermore, there is a ghost queue with the same capacity as the cache, where the reference of the evicted entries is stored.
+So newly insert entries are added to the QD queue. When the QD queue reaches its capacity, the entry at the front is evicted and added either to 
+the ghost queue if it was not referenced during its time in the QD queue, or to the main FIFO queue if it was referenced.
+Also, if a cache miss occurs and that entry is in the ghost queue, it will be directly added to the main FIFO queue.
+The idea of Quick Demotion is not new and some cache replacement policies uses similar approaches, like ARC or 2Q.
+However the difference is that this approach allows for an even quicker eviction of newly inserted entries.
+Besides, Quick Demotion can be used in conjunction with different cache replacement policies.
+This way, Quick Demotion is used for newly inserted entries, while the main cache follows a different cache replacement policy, 
+not necessarily a FIFO.
+
+Lazy promotion attempts to keep frequently accessed entries in the cache with minimal overhead.
+To achieve this, promotion occurs only on eviction, not on cache hits as in LRU and LFU, 
+which reduces the overhead of processing the metadata.
+Example for this would be the reinsertion of referenced entries to the FIFO queue.
+
+Furthermore, the authors propose modular cache replacement policies where a state of the art cache replacement 
+policy is used as the main cache and  other techniques such as Quick Demotion and Lazy Promotion 
+can be added to improve this replacement policy.
 
 \section*{FrozenHot Cache: Rethinking Cache Management for Modern Hardware by \cite{qiu2023frozenhot}}
 
-This is a new cache replacement algorithms based on list.
-The cache is divided in a frozen cache and a dynamic cache.
-The frozen cache(FC) is for hot entries and if fixed to reduce latency by removing eviction and locking for those entries. 
-The Dynamic cache(DC) on the other hand is used to achieve adaptability.
-Rebuilding of the frozen cache happens periodically.
-It is possible to combine this approach with different list based caches with minimal effort.
-So this is a cache better suited for multi-threading.
+In this paper the authors propose a method to increase the 
+scalability for list based cache replacement policies for applications with skewed accesses distribution.
+For this purpose, the cache is divided into two parts, the frozen cache and the dynamic cache.
+The frozen cache is intended to contain the hot entries and should improve throughput by eliminating promotion and locking.
+The dynamic cache, on the other hand, is used for workload adaptation 
+and works like a regular list-based cache, such as LRU or LFU.
+The FrozenHot cache works in three phases which are repeated periodically.
+The first phase is the learning phase, which is used to learn the entries that should be placed in the frozen cache.
+Also the ratio between frozen cache and dynamic cache capacity is decided during this phase and 
+can adopt to changing workloads.
+The second phase is the construction phase, which is used to build the Frozen Cache.
+The third phase, which is longer than the other two phases, is the frozen phase.
+% below this check again with deepl reached dayly limit
+During this phase, the frozen cache remains fixed, to allow faster accesses on cache hits without lock contention.
+Overall, this is an interesting approach for a scalable cache in multi threaded applications.
+
 
 \section*{TinyLFU: A highly efficient cache admission policy by \cite{einziger2017tinylfu}}
+% check this with deepl
 
-This is a LFU based cache replacement algorithm which uses a Bloom-Filter to approximate the frequency information for the cache entries with a relatively small memory usage.
-So even for large caches which can't be entirely in RAM the Bloom-Filter is small enough to fit in to RAM.
-It is based on the assumption of a skewed accesses distribution like zipfian.
-Also a small window, a FIFO queue is used to bring requested entries into the cache and then
-with the help of the frequency statistic in Bloom-filter the algorithm decide if it is better to bring the entry to the main cache or not. Main cache could be different caching algorithm.
-So TinyLFU has something like a Quick Demotion which means rarely used entries leave the cache quickly or are not transferred to the main cache at all.
-TinyLFU is intended for relatively large caches probably doesn't work as well on small caches ot the extra cost for bloom-filter are not justified.
-
-%clock-pro+ could also be a candidate for related work
+The authors of this paper propose a new frequency based cache replacement policy W-TinyLFU which uses a bloom filter to 
+approximate the frequency information for the cache entries and is specifically designed for skewed accesses distributions.
+So even for large caches that do not fit entirely in main memory, the bloom filter is small enough to fit and allows the 
+management of the metadata in main memory even for large caches.
+W-TinyLFU consists of three components.
+First, the window, a FIFO queue, into which new cache entries are inserted.
+This queue is relatively small, ranging from 1\% of the cache capacity.
+The second component is the main cache which makes up the rest of the capacity.
+The Bloom filter is located between the two.
+Every time the window queue reaches its limit.
+The front entry of the window, the window victim, is checked through the bloom filter
+if this entry should be promoted to the main cache by comparing the window victim with the 
+possible victim entry from the main cache.
+When the frequency estimation for the window victim is higher than the main cache victim,
+the window victim will be promoted to the main cache and the main cache victim will be evicted.
+Other wise the window victim will be evicted. 
+The window acts like a Quick Demotion method, so that newly inserted entries can leave the cache quickly.
+The advantage of W-TinyLFU is that it does not require ghost entries, which reduces the management overhead and space requirements 
+for the cache.
 
 \section*{Summary}
 
@@ -735,8 +836,6 @@ TinyLFU is intended for relatively large caches probably doesn't work as well on
 % Design and Implementation fehlen?! als Kapitel
 % 25-35%, ca 10-14 Seiten
 
-% see if I want to mention copy-on-write in background Haura or somewhere else
-
 In this chapter, we describe the cache replacement strategies that we implemented in Haura 
 and also the changes we had to make to Haura to implement them.
 First, we consider the DML state cycle (\cref{sec:dml state cycle}), 
@@ -745,7 +844,6 @@ After that, we are looking at the cache trait, the interface that any cache impl
 Lastly, we examine all the cache replacement strategies that have been implemented.
 Starting with CLOCK, which was already implemented,
 followed by the newly implemented cache replacement policies GCLOCK, CLOCK-Pro and ML-CLOCK.
-
 
 \section{DML State Cycle}
 \label{sec:dml state cycle}
