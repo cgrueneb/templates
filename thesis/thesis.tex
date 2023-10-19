@@ -389,10 +389,11 @@ JULEA then runs the Haura instance detached from the user applications, which me
 
 \todo[inline]{insert schemes from Haura docu for better understanding}
 \todo[inline]{insert link to Haura docu as source}
+\todo[inline]{cite JULEA source}
 
 The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
 achieved an improved write performance especially for small random write workloads and better sequential throughput.
-Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
+%Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
 The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
 
 As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
@@ -736,8 +737,8 @@ Nevertheless, there is still no general best policy that works in all use cases 
 % 5-10%, ca 2-5 Seiten
 
 In this chapter, we present related work.
-In addition to \cref{cha:background}, we present current cache replacement strategies aimed at increasing scalability 
-and to be used in multi threaded applications.
+In addition to \cref{cha:background}, we present current cache replacement policies that are designed to increase scalability 
+and are intended to be used in multi-threaded applications.
 
 \section*{It's Time to Revisit LRU vs FIFO by \cite{eytan2020s}}
 
@@ -800,7 +801,7 @@ can adopt to changing workloads.
 The second phase is the construction phase, which is used to build the Frozen Cache.
 The third phase, which is longer than the other two phases, is the frozen phase.
 % below this check again with deepl reached dayly limit
-During this phase, the frozen cache remains fixed, to allow faster accesses on cache hits without lock contention.
+During this phase, the frozen cache remains fixed to allow faster accesses on cache hits without lock contention.
 Overall, this is an interesting approach for a scalable cache in multi threaded applications.
 
 
@@ -829,7 +830,28 @@ for the cache.
 
 \section*{Summary}
 
--> coming soon
+For this work, we specifically investigated cache replacement policies that 
+can be easily integrated into an existing code base and are also suitable 
+for multi-threaded applications.
+
+The paper by \cite{eytan2020s} shows that with the emergence of new workloads, such as machine learning, and 
+increasing cache sizes, assumptions such as the independent reference model may not apply.
+In particular, the authors address that FIFO may be a better choice than LRU in cases where the cache does not fit in main memory.
+
+The work of \cite{yang2023fifo} is interesting because not only does it present a cache replacement policy based on simple FIFO queues, 
+which is easy to implement and scalable, but also because the approaches of Quick Demotion and Lazy Promotion 
+can be applied to other cache replacement policies.
+For future work, Quick Demotion could be added to the already implemented cache replacement policies.
+
+The FrozenHot cache by \cite{qiu2023frozenhot} achieves scalability by periodically "freezing" 
+a portion of the cache, this a new approach that should be investigated further. 
+Also, FrozenHot can be combined with different list-based cache policies, such as LRU or LFU.
+
+The last cache replacement policy we considered was W-TinyLFU by \cite{einziger2017tinylfu},
+which is a scalable variant of LFU.
+The better scalability compared to LFU is achieved by compactly handling the metadata in a bloom filter.
+Thus W-TinyLFU should be considered for large caches with skewed accesses distributions.
+
 
 \chapter{Design and Implementation}
 \label{cha:design and implementation}
@@ -980,10 +1002,12 @@ Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive wr
 \label{sec:implemented cache replacement policies}
 
 In this Section, we examine the implemented cache replacement policies.
-We have limited ourselves to clock based cache replacement policies since they have a lower overhead compared
-to most list-based cache replacement policies.
+We have limited ourselves to clock based cache replacement policies since they have a lower overhead 
+and better scalability 
+compared to most list-based cache replacement policies.
 Since clock-based replacement strategies try to do as little work as possible when cache hits occur and 
 do most of the work during the eviction of an entry, which should be infrequent.
+Furthermore, due to the 
 
 We followed the improvement strategies from the \cref{sec:improved cache replacement policies}
 in selecting the cache replacement policies to implement.
@@ -1467,6 +1491,7 @@ simple leave the pinned entry in the clock and continue the search at the next e
 
 
 \section{Summary}
+\label{sec:background summary}
 
 The basis for the data management in Haura is the DML state cycle.
 Each object can be in one of the four states on disk, unmodified, modified or in write back.
@@ -1520,6 +1545,7 @@ After that, we explain how the benchmarks for performance evaluation are constru
 And lastly, we look at the results of the evaluation which we divided in singled threaded and multi-threaded workloads.
 
 \section{Setup}
+\label{sec:setup}
 
 %- centos stream 8
 %- kernel 4.18.0-512.el8.x86_64
@@ -1555,6 +1581,7 @@ As secondary storage, we used the home folder which is shared between all nodes 
 
 
 \section{Methodology}
+\label{sec:methodology}
 
 The performance of a cache strongly depends on the I/O access patterns.
 Cache replacement policy should exploit this fact by 
@@ -2211,9 +2238,25 @@ differences in the mixed multi-thread benchmark.
 \label{cha:conclusion}
 % could be conclusions and future work
 
+For this thesis, we implemented and evaluated cache replacement policies for a copy-on-write 
+optimized hierarchical storage stack.
+We used Haura as the storage stack because Haura is designed as a research storage stack and 
+combines all relevant submodules from command line interface and data management 
+to benchmark tools in a single code base.
+
+We examined what cache replacement methods are and looked at 
+four early developed and commonly used policies, which were  Bélády's algorithm, FIFO, LRU and LFU.
+Although these cache replacement strategies are still commonly used, they all have some shortcomings 
+and workloads where they under perform.
+Therefore, have considered strategies to develop improved cache replacement policies.
+
+
+
+
+
 \section{Future Work}
 
--> after evaluation
+-> coming soon
 
 % 5-10%, 2-5 Seiten
 
