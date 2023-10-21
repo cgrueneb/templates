@@ -2237,6 +2237,7 @@ differences in the mixed multi-thread benchmark.
 \chapter{Conclusion}
 \label{cha:conclusion}
 % could be conclusions and future work
+% 5-10%, 2-5 Seiten
 
 For this thesis, we implemented and evaluated cache replacement policies for a copy-on-write 
 optimized hierarchical storage stack.
@@ -2250,15 +2251,59 @@ Although these cache replacement strategies are still commonly used, they all ha
 and workloads where they under perform.
 Therefore, have considered strategies to develop improved cache replacement policies.
 
+We followed these strategies when selecting the cache replacement policies we implemented and evaluated.
+CLOCK policy was already implemented and is a variant of LRU.
+The first policy we implemented, GCLOCK, is a generalization of CLOCK that uses a reference counter 
+instead of a reference bit and follows the strategy of using more historical information.
+For our second implemented policy, we chose CLOCK-Pro, which follows the strategy of detecting and adapting to access patterns.
+This is accomplished by dividing the cache entries into hot and cold entries based on 
+their Inter-Reference recency, which are treated differently.
+The last policy implemented was ML-CLOCK, which uses a single-layer perceptron, 
+a machine learning technique, to learn and adapt to the access pattern.
 
+We also looked at the changes we had to make to Haura to implement the policies.
+In particular, the circumstance that the DMU plays a central role in the management of the cache 
+meant that the implemented policies had to be modified to ensure the correct functionality of Haura.
 
+To evaluate the different cache policies, we created several benchmarks ranging from 
+random read only workloads to mixed random read write workloads for single and multi-threading. 
+For the random distribution we used zipf, normal, zoned and uniform distribution to simulated different workload behavior.
 
+In read-only benchmarks, both single and multi-threaded, CLOCK and GCLOCK performed best, 
+and in mixed single-threaded benchmarks, ML-CLOCK outperformed the other strategies. 
+The results are not as clear in the mixed multi-thread benchmarks.
+CLOCK-Pro, which showed the worst performance in the single-thread benchmarks, shows a significantly 
+better performance in these benchmarks.
+On the other hand, ML-CLOCK, which had the best mixed single threaded performance, 
+shows significantly worse performance compared to the other strategies, especially in benchmarks 
+with a high thread count and file size.
+
+Furthermore, we have observed that for both single and multi-threaded, 
+the cache hit rate decreases significantly with larger percentage of write operation.
+This can be explained by the fact that with an increased number of writes there are 
+also more pinned entries that cannot be removed from the cache.
 
 \section{Future Work}
 
--> coming soon
+This work provides several possibilities for future work.
+First, the evaluation should be extended to traces of real workloads and not just synthetic benchmarks.
+Since synthetic benchmarks are only of limited use for predicting performance for  
+application with a non static accesses distribution or very specific accesses patterns.
 
-% 5-10%, 2-5 Seiten
+Second, we saw that ML-CLOCK also was intended to reduce write operations to the underlying storage medium.
+For our test system which uses CephFS we could not test if this is actually the case and ML-CLOCK reduces write operations
+compared to the other implemented policies.
+
+Third, there are various other cache replacement policies that are promising to achieve better performance.
+In \cref{cha:background} and \cref{cha:related work} we have presented some further cache replacement policies that can be considered.
+Especially \cite{yang2023fifo} should be implementable with little effort.
+Since all the implemented cache replacement policies are clock-based and therefore already use some form of Lazy promotion and 
+only Quick Demotion needs to be implemented.
+
+Fourth, the multi threaded workloads in particular causes problems, so this area should be further investigated.
+One approach could be instead of using one cache for all threads, to split the cache and give each thread his own cache.
+This might allow to leverage ML-CLOCK's good performance for single threaded workloads for multi threaded workloads as well.
+
 
 
 \bibliographystyle{apalike}
