@@ -384,12 +384,26 @@ Haura is a research storage stack written primarily in Rust.
 Unlike traditional file systems, Haura runs in user space rather than kernel space.
 Also, Haura uses a key-value and object interface rather than the usual POSIX interface.
 It can be used either directly by an application, in which case Haura runs in the process context of the application, or
-use JULEA as a wrapper for Haura.
-JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use.
+use JULEA \cite{kuhn2017julea} as a wrapper for Haura.
+JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use \cite{hauraDocu}.
 
-\todo[inline]{insert schemes from Haura docu for better understanding}
-\todo[inline]{insert link to Haura docu as source}
-\todo[inline]{cite JULEA source}
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{haura_directly.jpg}		
+		\caption{Haura direct usage.}
+		\label{fig:randread zipf}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+		\includegraphics[width=\textwidth]{haura_wrapper.jpg}		
+		\caption{Haura usage through wrapper.}
+		\label{fig:randread normal}
+	\end{subfigure}k
+	
+	\caption{These figures show the two usages of Haura \cite{hauraDocu}.}
+	\label{fig:haura usage}
+\end{figure}
 
 The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
 achieved an improved write performance especially for small random write workloads and better sequential throughput.
@@ -897,12 +911,13 @@ And the last field \texttt{generation} is used to track the age of an object.
 
 The DML objects can be called by their unique \emph{ObjRef}.
 This reference, shown in \cref{lst:ObjRef enumeration}, equals to the state of an object at the last access.
-Thus, four states are possible unmodified, modified, in write back or incomplete.
-If an object is unmodified, it can be identified by his \emph{ObjectPointer} and
+Thus, four states are possible: unmodified, modified, in write back or incomplete.
+If an object is unmodified, it can be identified by its \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
 The incomplete state, as seen in \cref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
-If the DMU encounter an incomplete object during runtime, Haura panics and crashes.
+If the DMU encounters an incomplete object during runtime, Haura panics and crashes.
 % hier nochmal umschreiben
+\todo[inline]{rewrite this last part of serialization}
 
 \bigskip
 
@@ -926,12 +941,12 @@ pub enum ObjRef<P> {
 The DMU manages the cache and the states of each \emph{ObjRef} as shown in \ref{fig:DML state cycle}.
 The cycle starts with the creation of an object in modified state. When the DMU starts the write back of the object, the state
 is changed to in write back state.
-If the object is modified during write back through the steal function, it change the state back to modified.
-When the write back is finished the object state change to unmodified.
+If the object is modified during write back through the steal function, it changes the state back to modified.
+When the write back is finished the object state changes to unmodified.
 An unmodified object can either change the state to modified if the object has been modified or evicted from cache to disk.
 And lastly, any object on disk can be fetched in cache and will be in unmodified state.
 
-For the cache, all objects are managed with an unique \emph{ObjectKey}, as shown in \cref{lst:ObjectKey enumeration}.
+For the cache, all objects are managed with a unique \emph{ObjectKey}, as shown in \cref{lst:ObjectKey enumeration}.
 These \emph{ObjectKey} are  from the \emph{ObjRef} for each cache entry.
 Objects in incomplete state are not stored in cache.
 
@@ -958,7 +973,7 @@ In our case, however, the DMU must call the evict function, not the cache itself
 Furthermore, the evict function must take into account that there are cache entries that 
 are pinned i.e. in write back or modified state and therefore cannot be removed from the cache.
 Also, the DMU can remove specific cache entries, \cref{lst:simplified Cache trait} line 6 and line 7.
-The \texttt{remove}()-function for unmodified entries and \texttt{force\_remove}() for pinned entries.
+The \texttt{remove}()-function is used for unmodified entries and \texttt{force\_remove}() for pinned entries.
 
 \bigskip
 
@@ -983,31 +998,32 @@ trait Cache {
 \end{lstlisting}
 
 The second difference is that it must be possible to change the key for cache entries.
-Because an object in cache can change his state 
-Therefor we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
+Because an object in cache can change its state. 
+Therefore we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
 Again two functions for unmodified and pinned entries.
 
 Another difference is that the cache must be able to handle cache entries of any size.
 The handling of cache entries of arbitrary size is managed by the DMU.
-Each fetched entry is always inserted into the cache, and then the eviction function is invoked until the cache capacity is again below the specified cache size.
-So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the eviction function is called
-is called before inserting so that the cache size is never exceeded.
+Each fetched entry is always inserted into the cache, and then the eviction function is invoked 
+until the cache capacity is again below the specified cache size.
+So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the 
+eviction function is called before inserting so that the cache size is never exceeded.
 
 Furthermore, we have added the \texttt{get\_mut}()-function, \cref{lst:simplified Cache trait} line 5, 
 since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used and thus a read-lock is sufficient.
 But for ML-CLOCK it is needed to change the cache and atomic operations cannot be used.
 Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive write-lock.
+\todo[inline]{specify why atomics are not sufficient}
 
 \section{Implemented Cache Replacement Policies}
 \label{sec:implemented cache replacement policies}
 
-In this Section, we examine the implemented cache replacement policies.
+In this section, we examine the implemented cache replacement policies.
 We have limited ourselves to clock based cache replacement policies since they have a lower overhead 
 and better scalability 
 compared to most list-based cache replacement policies.
 Since clock-based replacement strategies try to do as little work as possible when cache hits occur and 
 do most of the work during the eviction of an entry, which should be infrequent.
-Furthermore, due to the 
 
 We followed the improvement strategies from the \cref{sec:improved cache replacement policies}
 in selecting the cache replacement policies to implement.
@@ -1015,7 +1031,7 @@ The CLOCK policy was already implemented and is an approximation of LRU.
 The next policy we consider is GCLOCK, a generalization of CLOCK that uses more history information.
 CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
 It uses the Inter-Reference recency to distinguish between hot and cold entries and handle these entries differently.
-The last implemented cache replacement policy, ML-CLOCK, is an example for an policy that uses machine learning.
+The last implemented cache replacement policy, ML-CLOCK, is an example for a policy that uses machine learning.
 A model is trained based on the removed entries and the cache hits. 
 This model is then used to find the entry for the eviction.
 
@@ -1081,8 +1097,9 @@ $\textcolor{ovgu-blue}{\texttt{end \ if}}$
 return entry 
 \end{lstlisting}
 
-For our implementation in Haura, we additionally need to handle the case where the entry to be evicted is pinned and therefore cannot be cleared.
-When this case occurs, we spare the entry, increment the hand, and start the search for the next entry to be eviction from there.
+For our implementation in Haura, we additionally need to handle the case where the entry to be 
+evicted is pinned and therefore cannot be cleared.
+When this case occurs, we spare the entry, increment the hand, and start the search for the next entry to be evicted from there.
 
 The advantage of CLOCK is that it does not have the problem of lock contention during cache hits, as LRU and LFU do.
 This is because CLOCK does not have to maintain a priority queue and 
@@ -1165,7 +1182,7 @@ To achieve better efficiency than LIRS, CLOCK-Pro combines the LRU priority queu
 And instead of using only one hand, as in CLOCK, three hands are used to provide the functions of LIRS, 
 as shown in \cref{fig:clock in clock-pro}.
 For our implementation, we use a circular double linked list instead of circular single linked list, like in CLOCK.
-Because in some cases me need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
+Because in some cases we need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
 Since the hands should not point to the same entry.
 
 \begin{figure}[ht]
@@ -1177,7 +1194,7 @@ Since the hands should not point to the same entry.
 \end{figure}
 
 For each entry we need to store additional metadata. This includes whether it is a hot or cold entry, is it resident or non-resident in the cache, has it been referenced in the near past, and is the entry in the test phase.
-Each Hot Entry is always resident and not in the testing phase.
+Each hot entry is always resident and not in the testing phase.
 Cold entries, on the other hand, may be resident or non-resident and may or may not be in the testing phase.
 Also, all newly inserted entries are resident cold entries in the test phase.
 Both can be referenced or not.
@@ -1185,19 +1202,21 @@ The test phase is used to give cold entries the chance to turn into hot entries.
 As we will see in a moment.
 
 The $\textbf{Hand}_{hot}$ marks the tail of the list and therefore points to the last hot entry.
-Also, $\textbf{hand}_{hot}$ turns unreferenced hot entries into cold entries  and removes the reference for referenced hot entries when it passes over them.
+Also, $\textbf{Hand}_{hot}$ turns unreferenced hot entries into cold entries  and removes the reference for referenced hot entries when it passes over them.
 
 
 The $\textbf{Hand}_{cold}$ is used to find the entry for eviction. 
 In this respect $\textbf{Hand}_{cold}$ operates like the hand in CLOCK.
-This means that $\textbf{hand}_{cold}$ will traverse all entries until it finds a resident cold entry that is not referenced and thus can be evicted.
-If the entry to be evicted is in the test phase, it remains in the cache as a non-resident entry, if it is not in the test phase, it is completely evicted from the cache.
+This means that $\textbf{Hand}_{cold}$ will traverse all entries until it finds a resident cold entry 
+that is not referenced and thus can be evicted.
+If the entry to be evicted is in the test phase, it remains in the cache as a non-resident entry, 
+if it is not in the test phase, it is completely evicted from the cache.
 So if there are only hot entries in the cache,  
 we must first convert hot entries to cold entries in order to evict an entry.
 Furthermore, $\textbf{Hand}_{cold}$ turn referenced cold entries in test phase to hot entries. 
 This is because the reference during test phase means that the Inter-Reference recency for this entry is low enough to be a categorized as an hot entry.
 
-And the $\textbf{Hand}_{cold}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
+And the $\textbf{Hand}_{test}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
 It also evicts passed non-resident cold entries from the cache.
 The reason for this is that non-resident cold entries that have not already been converted to hot entries have a high Inter-Reference recency 
 and therefore should not become hot entries.
@@ -1338,18 +1357,19 @@ When the d-hand move to the next entry, it moves the next entry
 which has the closest address in the dirty clock.
 This ensures that sequential blocks are written back, if possible.
 Furthermore, we use a ghost queue which saves the metadata of evicted entries and 
-is used to train the SLP.
+is used to train the single-layer perceptron(SLP).
 At most the ghost queue can store as many entries as the cache, clean-clock and dirty-clock together.
 
-ML-CLOCK uses a single-layer perceptron(SLP).
-SLP is a binary classifier, which in our case predicts whether an entry should be evicted or not.
+ML-CLOCK uses a single-layer perceptron(SLP), as a
+binary classifier, which in our case predicts whether an entry should be evicted or not.
 One advantage of SLP compared to more advanced machine learning techniques, such 
 as multi-layer perceptrons or long short-term memory networks, is that
 SLP has low time and space overhead,
 making it more suitable for online learning.
 Furthermore, SLP are not prone to overfitting.
 
-To predict if an entry will be evicted the following equation \ref{prediction} is used,\\
+%To predict if an entry will be evicted the following equation \ref{prediction} is used, 
+To predict if an entry will be evicted we use equation \ref{prediction},
 where $w_d, w_c$ and $w_b$ represents the weight for reuse-distance, reference count and the bias.
 The variables $x_d$ and $x_c$ represents the metadata values from the entry reuse-distance and the reference count.
 
@@ -1480,7 +1500,7 @@ In our implementation, we do not reinsert the entry into the cache for the same 
 manages which entries are inserted into the cache and not the cache itself.
 
 In case the entry for eviction is not already in the ghost queue, it will be insert into the ghost queue.
-An learning operation is triggered if the ghost queue exceeds it capacity and thus an ghost entry at the front leaves the ghost queue.
+A learning operation is triggered if the ghost queue exceeds it capacity and thus a ghost entry at the front leaves the ghost queue.
 
 So there are three possibilities to trigger a learning operation during a cache hit, 
 if the entry for eviction is already in the ghost queue or
@@ -1494,7 +1514,7 @@ simple leave the pinned entry in the clock and continue the search at the next e
 \label{sec:background summary}
 
 The basis for the data management in Haura is the DML state cycle.
-Each object can be in one of the four states on disk, unmodified, modified or in write back.
+Each object can be in one of the four states: on disk, unmodified, modified or in write back.
 Also the DML specifies which state changes are possible.
 In particular, the fact that objects cannot leave or enter the cache when in modified or 
 write back state, the pinned entries, requires significant adjustments to the cache policy.
@@ -1554,9 +1574,7 @@ And lastly, we look at the results of the evaluation which we divided in singled
 %- storage on CephFS
 %- haura config could be in appendix 
 
-
-For the evaluation the HPC-cluster of the Otto-von-Guericke-University was used.
-The HPC cluster of the Otto-von-Guericke-University was used for the evaluation.
+The HPC cluster of the Faculty of computer science of the Otto-von-Guericke-University was used for the evaluation.
 The \cref{tab:hardware node} shows the hardware of the used node.
 As secondary storage, we used the home folder which is shared between all nodes and uses CephFS.
 
@@ -1599,9 +1617,11 @@ Furthermore, we benchmark for a single fio thread and multiple fio threads perfo
 
 The selected patterns for random I/O accesses are the following distributions.
 First, the zipf-distribution (with $\theta=1.1$) which is a highly skewed long-tailed distribution.
-This means that only a few objects are accessed frequently and the most objects are accessed rarely.
+This means that only a few objects are accessed frequently and most objects are accessed rarely.
 It is therefore a cache-friendly workload.
 Such an access distribution is common, for example, with web caches and databases.
+
+\todo[inline]{could be insert we don't used cases with more writes}
 
 Next, we have selected the normal distribution.
 The reason for this is that compared to the Zipf distribution, 
@@ -1649,7 +1669,7 @@ numjobs=4
 thread
 bs=1m
 direct=1
-ioengine=external:/home/cgrueneb/haura/fio-haura/src/fio-engine-haura.o
+ioengine=external:/.../fio-engine-haura.o
 size=16g
 filesize=32g
 fsync=131072
@@ -1665,7 +1685,6 @@ in most cases or we would have to use very large I/O sizes to actually be able t
 \newpage
 \section{Single threaded}
 \subsection{Random read only Benchmark}
-\todo[inline]{correct the spelling of file size in plots}
 
 The \cref{fig:single 100p read} shows the benchmark for random read only workload for the different random distributions.
 For this case the hit rate for CLOCK and GCLOCK is nearly identical and both perform the best for all random distributions and file sizes. 
@@ -1716,6 +1735,8 @@ Thus, the cache must be refilled and each newly inserted entry does not count as
 This leads to a hit rate of 100\% for small file sizes.
 With increasing file size ML-CLOCK outperforms the other cache replacement policies for all random distributions.
 The performances of the CLOCK, GCLOCK and CLOCK-Pro are almost equal across all distributions and file sizes.
+
+\todo[inline]{explain why we drop all cache entries for a synchronization}
 
 \begin{figure}[H]
 	\centering
@@ -1787,17 +1808,6 @@ CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
 	\caption{These figures show the hit-rate file-size diagram for each implemented 		cache replacement policy for random 50\% read 50\% write workload with different random distributions.}
 	\label{fig:single 50p read}
 \end{figure}
-
-%-------------------------------------------------------
-
-% not sure if I want to use this, don't have seq write for multi-threaded
-%\begin{figure}[H]
-%	\centering
-%	\includegraphics[scale=0.45]{seq_write.jpg}		
-%	\caption{This figure show the hit-rate file-size diagram for each implemented 		cache replacement policy for sequential writes}
-%	\label{fig:seq write}
-%\end{figure}
-
 
 \section{Multi threaded}
 \subsection{Random read only Benchmark}
@@ -2233,6 +2243,8 @@ significantly lower performance for high thread counts and file sizes.
 Which could indicate that ML-CLOCK has problems to recognize the I/O access pattern for higher thread counts and file sizes.
 Even the performance of CLOCK and GCLOCK, which was almost the same in the single-thread and multi-thread read-only benchmark, shows significant 
 differences in the mixed multi-thread benchmark.
+
+\todo[inline]{expand summary with a fazit and a conclusion when to use which cache policy}
 
 \chapter{Conclusion}
 \label{cha:conclusion}
