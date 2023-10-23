@@ -272,8 +272,17 @@ So if the copy in cache is changed, the changes must be written back to the orig
 HSM on the other hand actually moves the data to the faster storage.
 Thus, no write back is necessary.
 
+\section{Summary}
 
-% could insert a summary of the first subsection to outline the problem
+The growing gap between the clock frequency of the CPU on the one hand and 
+the memory latency and bandwidth on the other hand lead to different memory technologies 
+being built up in a memory hierarchy.
+This hierarchy allows a trade off between cost, capacity and access speed.
+
+Yet, the question arises how the data should be moved in this hierarchy, to achieve optimal performance.
+Frequently used data should be located in the fast memory, while rarely used data should be moved to the slower memory.
+For this purpose, we have discussed two methods: caching and hierarchical storage management.
+
 \section{Contribution}
 
 The objective of this thesis is to implement and evaluate different cache replacement policies 
@@ -305,8 +314,6 @@ Finally, in \cref{cha:conclusion}, we summarize the thesis and our results in a 
 % nicht zu weit ausschweifen
 % 10-20%, ca. 4-10 Seiten
 
-%- next chapter gives a short overview of topics necessary to understand the following work\\
-
 In this chapter we explain topics that are necessary for the understanding of the work.
 First, we describe the resource management technique copy on write. Then we discuss the $B^{\varepsilon}$-tree, 
 which is a write optimized variant of the B-Tree.
@@ -316,7 +323,6 @@ We then present several basic cache replacement policies and strategies for impr
 
 \section{Copy on Write}
 \label{sec:copy on write}
-%
 %- should be mentioned because it is an important part of haura and $B^{\varepsilon}$-tree\\
 %- used for easy creation of snapshots \\
 %- described in \cite{patterson1995informed}\\
@@ -348,11 +354,15 @@ results in increased memory usage as long as the original data and the copy are 
 
 The idea for the $B^{\varepsilon}$-tree was introduced by \cite{brodal2003lower} in a study of the trade off between insertions and queries for comparison-based external memory dictionaries.
 
-The basis for $B^{\varepsilon}$-trees is the B-tree, which has good performance on queries but suffers from poor performance on small writes, as shown in \cite{bender2015introduction}, 
+The basis for $B^{\varepsilon}$-trees is the B-tree, which has good performance on queries but suffers 
+from poor performance on small writes, as shown in \cite{bender2015introduction}, 
 because the entire node must be updated for each small write.
-However, if we reduce the node size to optimize for small writes, sequential read performance suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
+However, if we reduce the node size to optimize for small writes, sequential read performance 
+suffers because many smaller nodes have to be fetched from disk instead of fewer but larger ones.
 
-To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown in \cref{fig:structure B-epsilon-tree}.
+To optimize for both cases, the $B^{\varepsilon}$-tree adds a buffer to each 
+internal node of size $B - B^{\varepsilon} $ with $ 0 \leq \varepsilon < 1$ as shown 
+in \cref{fig:structure B-epsilon-tree}.
 
 \begin{figure}[ht]
 	\centering
@@ -366,26 +376,54 @@ Only when the root node's buffer is full, a batch of messages is flushed down th
 If a node needs to be split, the buffer is also split between the new nodes.
 When the insert message arrives at a leaf node, the data is added to the leaf.
 
-This behavior leads to better insertion performance than B-trees, since insertion always occurs at the root, no searching for the correct insertion point is required, and  
+This behavior leads to better insertion performance than B-trees, since insertion always occurs at the root, 
+no searching for the correct insertion point is required, and  
 the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
 On deletion a "tombstone message" will be insert into the tree and will be flushed down the tree to a leaf, like an insertion message.
 
-For queries, in the $B^{\varepsilon}$-tree, we also need to check buffer on the way to the leaf nodes to see if there are any relevant messages.
-These messages must be processed, but that does not mean they are flushed down immediately, this can happen later.
+In order to process queries, not only the leaf nodes must be considered as in a B-tree, 
+additionally the buffers of the nodes must be checked whether they contain messages important for the queries.
+To speed up the search in a buffer for specific messages for a key or query, 
+all buffers are organized as self-balanced search trees, like a red-black tree.
+Thus, the $B^{\varepsilon}$-trees achieve similar asymptotic I/O costs for queries, but are better for insertions compared to B-trees,
+as shown in \cref{tab:comparison trees}.
 
-So the $B^{\varepsilon}$-trees achieves similar asymptotic I/O cost for queries but is better for insertions compared to B-trees.
-\todo[inline]{write a bit more detailed about this}
-
+\begin{table}[ht]
+	\centering
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+		\textbf{Data structure} & \textbf{Insert} & \textbf{Point Query}  & \textbf{Range Query}\\
+		\hline
+		B-tree & $\log_{B} N$ & $\log_{B} N$ & $\log_{B} N + \frac{k}{B}$\\
+		\hline
+		$B^{\varepsilon}$-tree & $ \frac{\log_{B} N}{\varepsilon B^{1 - \varepsilon}}$ & $ \frac{\log_{B} N}{\varepsilon}$ 
+		& $ \frac{\log_{B} N}{\varepsilon} + \frac{k}{B}$ \\
+		\hline
+		$B^{\varepsilon}$-tree ($\varepsilon = 1/2$) & $ \frac{\log_{B} N}{\sqrt{B}}$ & $\log_{B} N$ & $\log_{B} N + \frac{k}{B}$ \\
+		\hline
+	\end{tabular}
+	\caption{The table shows the asymptotic I/O cost for B-tree and $B^{\varepsilon}$-tree.
+			B is the node size and N the number of stored elements. 
+			The parameter $\varepsilon$ is the ratio between the space used for storing pivots and 
+			child pointers and the space used as message 	buffer.}
+	\label{tab:comparison trees}
+\end{table}
 
 \section{Haura}
 \label{sec:haura}
 
-Haura is a research storage stack written primarily in Rust.
-Unlike traditional file systems, Haura runs in user space rather than kernel space.
+Haura is a hierarchical storage stack, which is intended as a research storage stack.
+It is written mainly in Rust and has the advantage that all relevant functionalities for 
+implementing, testing and optimizing a memory stack are unified in a single code base \cite{wunsche2022data}. 
+Thus, parts can easily be modified and different approaches can be tested and evaluated against each other.
+
+In contrast to traditional file systems, Haura runs in user space rather than kernel space.
 Also, Haura uses a key-value and object interface rather than the usual POSIX interface.
 It can be used either directly by an application, in which case Haura runs in the process context of the application, or
-use JULEA \cite{kuhn2017julea} as a wrapper for Haura.
-JULEA then runs the Haura instance detached from the user applications, which means that the user application can be terminated or new applications can be created as long as JULEA is running, resulting in more flexibility compared to direct use \cite{hauraDocu}.
+use JULEA \cite{kuhn2017julea} as a wrapper.
+JULEA then runs the Haura instance detached from the user applications, 
+which means that the user application can be terminated or new applications can be created and 
+use Haura as long as JULEA is running, resulting in more flexibility compared to direct use \cite{hauraDocu}.
 
 \begin{figure}[H]
 	\centering
@@ -405,13 +443,12 @@ JULEA then runs the Haura instance detached from the user applications, which me
 	\label{fig:haura usage}
 \end{figure}
 
-The development of Haura started to compare $B^{\varepsilon}$-tree to ZFS and ext4 filesystem \cite{wiedemann2018modern}, where the Haura stack
-achieved an improved write performance especially for small random write workloads and better sequential throughput.
-%Then Haura would be extended by \cite{hoppner2021design} to support multiple storage levels
-The work of \cite{hoppner2021design} extended Haura with an object storage interface and the support of multiple storage levels while preserving the benefits of the $B^{\varepsilon}$-tree.
+The development of Haura has started by comparing the $B^{\varepsilon}$ tree with the ZFS and ext4 file systems \cite{wiedemann2018modern}.
+In this comparison, Haura achieved better write performance for small random writes and better sequential throughput.
+Additionally, Haura was extended by \cite{hoppner2021design} to include an object storage interface and support for multiple storage levels while retaining the benefits of the $B^{\varepsilon}$-tree.
 
-As pointed out by \cite{wunsche2022data} the advantage of Haura is that all levels which a relevant to implement and optimize a storage stack a combined in a single code base, so that it is easy change subsystems and test different approaches.
 Haura is structured in layers as shown in \cref{fig:structure Haura}.
+At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\varepsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
 
 \begin{figure}[ht]
 	\centering
@@ -419,9 +456,6 @@ Haura is structured in layers as shown in \cref{fig:structure Haura}.
 	\caption{Structure Haura \cite{wiedemann2018modern}}
 		\label{fig:structure Haura}
 \end{figure}
-
-
-At the top is the \emph{Database Layer} which manages multiple datasets and snapshots. Each dataset provide a key-value interface, snapshots only read-only key-value interface. Also for each dataset exists an own $B^{\varepsilon}$-tree and  a root tree which saves the allocation bitmaps and metadata.
 
 The next layer, the \emph{Tree Layer} manages the $B^{\varepsilon}$-trees.
 The \emph{database layer} sends messages to the $B^{\varepsilon}$ trees consisting of key-value or key-message pairs that the $B^{\varepsilon}$ trees process. A message for key-message pair can contain arbitrary data or apply arbitrary code on data.
@@ -439,7 +473,7 @@ Furthermore the storage is divided in to tiers from \emph{Fastest}, \emph{Fast},
 The user can decide how the used hardware falls into these tiers. Also, not all tiers need to be used.
 
 The last layer, the \emph{Vdev Layer}, is responsible for actually reading and writing data from the disks.
-Single disk, multiple disks or RAID-like configurations can be used.
+Single disk, multiple disks or RAID-like configurations are possible.
 
 \section{Cache Replacement Policies}
 \label{sec:cache replacement policies}
@@ -914,10 +948,10 @@ This reference, shown in \cref{lst:ObjRef enumeration}, equals to the state of a
 Thus, four states are possible: unmodified, modified, in write back or incomplete.
 If an object is unmodified, it can be identified by its \emph{ObjectPointer} and
 when the object is either modified or in write back, objects are given a unique \emph{ModifiedNodeId} for identification.
-The incomplete state, as seen in \cref{lst:ObjRef enumeration}, can only be reached when an object is deserialized from disk.
-If the DMU encounters an incomplete object during runtime, Haura panics and crashes.
-% hier nochmal umschreiben
-\todo[inline]{rewrite this last part of serialization}
+The incomplete state, as seen in \cref{lst:ObjRef enumeration}, is an intermediate state achieved only by either serialization during 
+evicting an object to disk or deserialization during fetching an object from disk.
+Any object in incomplete state reaches either the on-disk state or the unchanged state in the DML cycle. 
+The incomplete state is only used to control internal processes within Haura.
 
 \bigskip
 
@@ -1010,10 +1044,17 @@ So the cache size is a soft limit that can be temporarily exceeded, not a hard l
 eviction function is called before inserting so that the cache size is never exceeded.
 
 Furthermore, we have added the \texttt{get\_mut}()-function, \cref{lst:simplified Cache trait} line 5, 
-since the \texttt{get}()-function does not allow that the state of the cache changes, respectively atomics are used and thus a read-lock is sufficient.
-But for ML-CLOCK it is needed to change the cache and atomic operations cannot be used.
-Therefore we implemented \texttt{get\_mut}()-function which uses an exclusive write-lock.
-\todo[inline]{specify why atomics are not sufficient}
+since the \texttt{get}()-function does not allow that the state of the cache changes, 
+respectively atomics are used and thus a read-lock is sufficient.
+
+But for ML-CLOCK, it is necessary that we can change the cache.
+As we will show in \cref{sub:ml-clock}, ML-CLOCK uses two linked lists.
+When a cache hit occurs that also modifies the entry,
+the modified entry is evicted from one linked list and inserted into the other linked list.
+This movement cannot be realized with atomic operation.
+Thus an exclusive write-lock is necessary for this case. 
+Therefore we implemented \texttt{get\_mut}()-function that uses an exclusive write-lock.
+
 
 \section{Implemented Cache Replacement Policies}
 \label{sec:implemented cache replacement policies}
