@@ -132,7 +132,20 @@ Johannes Wünsche
 % stellt heraus was der eigene Anteil war/ist
 % ca 1 Seite
 
--> write this last after everything else
+An increasing problem is the growing gap between processor frequency and memory latency.
+In order to counter this problem, different memory technologies are combined in a memory hierarchy.
+Fast but expensive memory is used in combination with slow but cheaper memory to achieve 
+the best possible balance between cost, latency, bandwidth and capacity.
+In addition to the memory hierarchy, caching and hierarchical storage management, 
+also known as tiered storage, are used to move data between hierarchy levels.
+
+For this thesis, we implement and evaluate different cache replacement policies for a hierarchical storage 
+stack based on $B^{\varepsilon}$-tree, a write-optimized variant of the B-tree, which internally uses a cache 
+to store frequently used data.
+We will run various benchmarks for this purpose and examine both single threaded and multi threaded workloads. 
+Based on these benchmark results, we will show that the choice for the cache replacement policy depends on 
+the underlying access distribution as well as on the number of threads using the cache.
+Furthermore, we will make a recommendation which cache replacement policy should be used for certain workloads.
 
 \end{abstract}
 
@@ -2146,14 +2159,12 @@ The last benchmark is for random 50\% read and 50\% write operations, \cref{fig:
 \cref{fig:multi uniform rw_50to50}.
 Here the increased number of write operations again leads to lower hit rates, 
 as in the corresponding single threaded benchmark.
-
 CLOCK-Pro again shows better  performance for this workload compared to single threaded or 
 the multi threaded read only benchmark.
 This further supports the thesis that in multi mixed multi threaded workloads our 
 change to CLOCK-Pro is not significant.
 In particular, CLOCK-Pro performs best with 64 GB and 128 GB 
 file sizes and 8 to 16 threads.
-
 ML-CLOCK, on the other hand, has shows mixed performance.
 With zipf-distribution and low thread count, the performance is good.
 However, with a higher thread count and file sizes, the performance of ML-CLOCK 
@@ -2163,6 +2174,14 @@ underlying access pattern for a higher number of threads and
 therefore performs worse than the other cache replacement policies in such workloads.
 Furthermore, the performance of CLOCK and GCLOCK, with the exception of uniform-distribution, 
 is more distinct from each other.
+
+What also stands out for this specific benchmark, with equal ratio of read and write operation \cref{fig:multi uniform rw_50to50}, 
+is that for the uniform random distribution the hit rate increases with larger thread count.
+This is unexpected since for all other benchmarks the uniform distribution hit rate for all cache replacement 
+polices remains about the same regardless of thread count and file size, 
+with the exception of ML-CLOCK for high thread count.
+This suggests that the combination of increased thread count and proportion of write operations 
+improves the hit rate for random uniform distribution.
 
 \begin{figure}[H]
 	\centering
@@ -2307,22 +2326,47 @@ In read only workloads, CLOCK and GCLOCK perform best and CLOCK performs worst, 
 For the mixed workloads, there is no cache replacement policy that outperforms the other.
 CLOCK-Pro, for example, has good performance at high thread counts and file sizes, but in a few cases has significantly 
 under performance at lower thread counts.
-Also, ML-CLOCK, which showed the best performance for mixed single threaded benchmarks, has 
-significantly lower performance for high thread counts and file sizes.
-Which could indicate that ML-CLOCK has problems to recognize the I/O access pattern for higher thread counts and file sizes.
-Even the performance of CLOCK and GCLOCK, which was almost the same in the single-thread and multi-thread read-only benchmark, shows significant 
+Also the performance of CLOCK and GCLOCK, which was almost the same in the single-thread and 
+multi-thread read-only benchmark, shows significant 
 differences in the mixed multi-thread benchmark.
 
-% use deepl to prove this
+ML-CLOCK, which showed the best performance for mixed single threaded benchmarks, has 
+significantly lower performance for high thread counts and file sizes.
+Which could indicate that ML-CLOCK has problems to recognize the I/O access 
+pattern for higher thread counts and file sizes.
+Another possible cause could be how the ghost queue is managed.
+Whether a learn operation is triggered depends on if the ghost queue has already reached maximum size and 
+therefore entries have to be removed when a cache entry will be evicted from the cache which are then used for learning.
+The maximum size of the ghost queue depends on how many cache entries are in the cache.
+So if a synchronization is performed and the cache is cleared,
+no entries are removed from the ghost queue for the time being.
+Only after the cache is refilled and an eviction is performed, thus adding an entry to the ghost queue, 
+the size of the ghost queue is checked.
+Since this is felt by the entries before the synchronization, a large quantity of learning operation 
+are triggered at one blow until the size of the ghost queue is again smaller equal to the size of the cache.
+This is not a problem for the single threaded benchmark, since there is also only one random distribution for the one thread.
+But for the multi threaded benchmarks each thread has its own file to which the random 
+distribution is applied, so the access pattern is more complex.
+With the triggering of a batch of learning operations at the same time, the SLP may tend to overfitting 
+which is disadvantageous when the access patterns are more complex, as in the case of multi-threaded benchmarks.
+
 The weaker performance of CLOCK-Pro in the read-only benchmarks, both single and multi-threaded, 
 can likely be attributed to our changes to CLOCK-Pro for Haura.
 The change was that non-resident cold entries cannot be converted to resident hot entries.
 This change is likely to be more noticeable in read only worklaods, as in this case there is no synchronization
 which clears the cache.
 
--> hier weitermachen muss noch ein Empfehlung abgeben wann welche policy genutzt werden soll
+As a result, it can be said that for all implemented cache replacement policies and 
+single threaded use cases ML-CLOCK should be used.
+CLOCK and GCLOCK have better performance for read only workloads but read only 
+workloads are rather the exception for real applications.
 
-\todo[inline]{expand summary with a fazit and a conclusion when to use which cache policy}
+For multi-threaded use cases it is more difficult to make a recommendation, 
+as the performance of the implemented policies was also mixed and there is no clearly better policy.
+One possibility could be to use ML-CLOCK for small thread count, about 4 threads, but switch to CLOCK-Pro 
+for higher thread count.
+Another possibility would be to use CLOCK-Pro for all multi threaded application.
+However, neither of these options is optimal and may produce suboptimal results for some applications.
 
 \chapter{Conclusion}
 \label{cha:conclusion}
@@ -2373,6 +2417,18 @@ the cache hit rate decreases significantly with larger percentage of write opera
 This can be explained by the fact that with an increased number of writes there are 
 also more pinned entries that cannot be removed from the cache.
 
+Based on our measurements, we can say that ML-CLOCK should be used for single threaded use cases.
+Since it has achieved the best results for all single threaded benchmarks for mixed workloads. 
+In the single threaded read only workloads, CLOCK and GCLOCK performed better, 
+but read only workloads are uncommon for real applications. 
+
+It is more difficult to make a recommendation for use cases with multiple threads, 
+since the performance of the implemented strategies was also inconsistent and there is no clear better strategy.
+An option would be to use ML-CLOCK for a low number of threads and switch to CLOCK-Pro 
+for higher thread counts.
+A different option would be to use CLOCK-Pro for all multi threaded applications.
+Nevertheless, both options are not optimal and may lead to suboptimal results for some applications.
+
 \section{Future Work}
 
 This work provides several possibilities for future work.
@@ -2393,6 +2449,10 @@ only Quick Demotion needs to be implemented.
 Fourth, the multi threaded workloads in particular causes problems, so this area should be further investigated.
 One approach could be instead of using one cache for all threads, to split the cache and give each thread his own cache.
 This might allow to leverage ML-CLOCK's good performance for single threaded workloads for multi threaded workloads as well.
+
+Fifth, since we have seen that the change we have made to CLOCK-Pro and ML-CLOCK 
+is causing problems and possible performance degradation, the policies and DMU should be 
+modified to correct this.
 
 
 
