@@ -127,12 +127,6 @@ Johannes Wünsche
 
 \begin{abstract}
 
-% abstract als letztes schreiben, fast kurz die Arbeit zusammen um schnell einen Überblick zu geben
-% enthält den wesentlichen Inhalt und die kurz zusammengefasst das Ergebnis der Arbeit
-% stellt heraus was der eigene Anteil war/ist
-% ca 1 Seite
-
-
 An increasing concern is the widening disparity between processor frequency and memory latency.
 To address this issue, different memory technologies are combined in a memory hierarchy.
 Fast but expensive memory is used in combination with slower but cheaper memory to achieve 
@@ -209,7 +203,8 @@ Caching can also mean that data from a remote memory is stored in a local memory
 The idea of caching is based on the assumption of temporal and spatial locality.
 Temporal locality means that a datum accessed in the past is likely to be accessed again, and
 spatial locality means that when a datum is accessed, a nearby datum in memory is also likely to be accessed.
-To take advantage of spatial locality, blocks of data are considered instead of single datum as seen in \cref{tab:caching hierarchy}.
+To take advantage of spatial locality, blocks of data are considered instead of single datum as seen 
+in \cref{tab:caching hierarchy}.
 
 If we include caching in the memory hierarchy so that each faster memory caches the slower memory below it, 
 we also have a caching hierarchy as shown in \cref{tab:caching hierarchy}.
@@ -369,21 +364,25 @@ in \cref{fig:structure B-epsilon-tree}.
 		\label{fig:structure B-epsilon-tree}
 \end{figure}
 
-As new data is inserted into the $B^{\varepsilon}$-tree, the data is written to the buffer of the root node as "insert message".
-Only when the root node's buffer is full, a batch of messages is flushed down the tree, preferably to the node with the most pending messages. 
+As new data is inserted into the $B^{\varepsilon}$-tree, the data is written to the buffer of the root 
+node as "insert message".
+Only when the root node's buffer is full, a batch of messages is flushed down the tree, 
+preferably to the node with the most pending messages. 
 If a node needs to be split, the buffer is also split between the new nodes.
 When the insert message arrives at a leaf node, the data is added to the leaf.
 
 This behavior leads to better insertion performance than B-trees, since insertion always occurs at the root, 
 no search for the correct insertion point is required, and  
 the actual writing of data is delayed in batches only when enough changes have accumulated in a buffer.
-On deletion a "tombstone message" will be inserted into the tree and will be flushed down the tree to a leaf, like an insertion message.
+On deletion a "tombstone message" will be inserted into the tree and will be flushed down the tree to a leaf, 
+like an insertion message.
 
 In order to process queries, not only the leaf nodes must be considered as in a B-tree, 
 additionally the buffers of the nodes must be checked to see whether they contain messages relevant for the queries.
 To speed up the search in a buffer for specific messages for a key or query, 
 all buffers are organized as self-balanced search trees, like a red-black tree.
-Thus, the $B^{\varepsilon}$-trees achieve similar asymptotic I/O costs for queries, but are better for insertions compared to B-trees,
+Thus, the $B^{\varepsilon}$-trees achieve similar asymptotic I/O costs for queries, 
+but are better for insertions compared to B-trees,
 as shown in \cref{tab:comparison trees}.
 
 \begin{table}[ht]
@@ -441,7 +440,8 @@ use Haura as long as JULEA is running, resulting in more flexibility compared to
 	\label{fig:haura usage}
 \end{figure}
 
-The development of Haura started by comparing the $B^{\varepsilon}$ tree with the ZFS and ext4 file systems \cite{wiedemann2018modern}.
+The development of Haura started by comparing the $B^{\varepsilon}$ tree with the ZFS 
+and ext4 file systems \cite{wiedemann2018modern}.
 In this comparison, Haura achieved better write performance for small random writes and better sequential throughput.
 Additionally, Haura was extended by \cite{hoppner2021design} to include an object storage interface and 
 support for multiple storage levels while retaining the benefits of the $B^{\varepsilon}$-tree.
@@ -460,12 +460,14 @@ Furthermore, for each dataset exists an own $B^{\varepsilon}$-tree and a root tr
 
 The next layer, the \emph{Tree Layer} manages the $B^{\varepsilon}$-trees.
 The \emph{database layer} sends messages to the $B^{\varepsilon}$ trees consisting of key-value or key-message pairs that 
-the $B^{\varepsilon}$ trees process. A message for a key-message pair can contain arbitrary data or apply arbitrary code on data.
+the $B^{\varepsilon}$ trees process. 
+A message for a key-message pair can contain arbitrary data or apply arbitrary code on data.
 Key-value pairs are stored in leave nodes and key-message nodes are stored in the inner nodes of the tree.
 Each node is an object for the \emph{Data Management Layer} and is tracked individually.
 
 The \emph{Data Management Layer}(DML) manages objects for the \emph{Tree Layer} and \emph{database layer} 
-which includes caching objects in memory, tracking modifications to objects and write back modified objects to storage devices.
+which includes caching objects in memory, tracking modifications to objects and write back modified 
+objects to storage devices.
 Main part of the DML is the Data Management Unit (DMU).
 The DMU is shared by all trees and ensures that no irregular state can be reached.
 It takes care of critical disk management such as block allocation.
@@ -481,7 +483,10 @@ Single disk, multiple disks or RAID-like configurations are possible.
 \section{Cache Replacement Policies}
 \label{sec:cache replacement policies}
 
-Cache replacement policies are used to manage a cache. 
+Cache replacement policies 
+\footnote{The terms "cache replacement strategies" and "cache replacement algorithm" are used 
+interchangeably in the sources.}
+are used to manage a cache. 
 Which means that cache replacement policies decide which entries are evicted in the occurrence of a cache miss.
 For this decision making, they can use additional metadata or data structures.
 Selecting an entry for eviction is non-trivial and significantly affects the performance of the cache.
@@ -493,7 +498,8 @@ and then we discuss three early developed policies that are still widely used an
 also form the basis for further improved cache replacement policies.
 
 \subsection{Optimal Cache Replacement Policy}
-The theoretically optimal cache replacement policy is Bélády's algorithm (also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
+The theoretically optimal cache replacement policy is Bélády's algorithm 
+(also known as OPT or clairvoyant algorithm) \cite{belady1966study}.
 This algorithm always evicts the cache entry whose next use is furthest in the future.
 The problem is that this information is usually not available during runtime, but only after an application has ended.
 Even though this optimal algorithm is not used in any real system, it is useful for theoretical comparison with other 
@@ -566,7 +572,8 @@ also be used in the future.
 Thus, when a cache miss occurs, the least frequently accessed entry is evicted.
 In case more then one entry has the same access count, we have to use FIFO or decide randomly which entry has to be evicted.
 
-All cache entries are stored in a priority queue, usually implemented as doubly linked list or a min-heap, sorted by their access frequency.
+All cache entries are stored in a priority queue, usually implemented as 
+doubly linked list or a min-heap, sorted by their access frequency.
 The entry with the lowest frequency in cache is at the back and the entry with the highest frequency in cache 
 is at the front of the priority queue.
 As metadata, we have a counter assigned for each cache entry.
@@ -578,7 +585,8 @@ But LFU has some  serious drawbacks.
 First, the overhead for maintaining the metadata is higher than for LRU and FIFO.
 Also, as with LRU, there is a problem with lock contention when the priority queue is updated on a cache hit.
 And second, the access frequency and distribution is not constant over time.
-For example, if a cache entry is accessed frequently during the startup of an application but not thereafter, it may take a long time for the 
+For example, if a cache entry is accessed frequently during the startup of an application but not thereafter, 
+it may take a long time for the 
 entry to be removed from the cache.
 The problem in this case is that LFU do not use recency information.
 There are two main strategies to make LFU more applicable in this case.
@@ -620,9 +628,12 @@ which we will discuss in more detail below
 \subsection{Explicit User Level Hints}
 
 The first improvement strategy is through user-level hints.
-This idea was proposed by \cite{cao1994application} and \cite{patterson1995informed}.
-The idea is that the user provides hints about which cache entries have a low probability of being accessed in the near future.
-The problem with this approach is that the user must understand the access pattern in order to provide appropriate hints, which increases 
+This idea was proposed by \\
+\cite{cao1994application} and \cite{patterson1995informed}.
+The underlying concept is that the user provides hints about which cache entries have a low probability of 
+being accessed in the near future.
+The problem with this approach is that the user must understand the access pattern 
+in order to provide appropriate hints, which increases 
 the required programming effort \cite{10.1145/511399.511340}.
 Therefore, user level hints can be a solution in special cases,
 but they are less suitable as a general cache replacement policy.
@@ -714,7 +725,7 @@ depending on the ratio between the number of non-resident entries of each queue.
 Also, whenever a cache hit occurs on an $L_1$ entry, whether resident or non-resident, it is removed from $L_1$ and added to $L_2$.
 So, depending on the workload and thus the non-resident entries being accessed, ARC behaves more like LRU or LFU.
 The significant advantage of ARC is that it is adoptable and has no parameters like LIRS or 2Q that need to be manually optimized.
-Also, the space overhead is still low with only 0.75 percent of the cache size \cite{megiddo2004outperforming}.
+Also, the space overhead is still low with only 0.25 percent of the cache size \cite{megiddo2004outperforming}.
 
 \subsection{Using Machine Learning}
 
@@ -724,14 +735,16 @@ This can be done either by online learning, where learning occurs during executi
 or by offline learning, where parameters are learned before execution using a predefined data set.
 
 An example of this strategy is fuzzy page replacement algorithm by \cite{akbari2020page}, which uses
-fuzzy c-means, an unsupervised machine learning technique, to find clusters in all cache entries based on the frequency, recency and 
+fuzzy c-means, an unsupervised machine learning technique, to find clusters in all cache entries based 
+on the frequency, recency and 
 time difference between two consecutive accesses for each entry.
 Each time an entry needs to be evicted, the entry with the greatest distance to all cluster centers is evicted.
 
 Another example is proposed by \cite{choi2022learning} which uses Seq2Seq network, 
 a type of recurrent neural network designed for handling sequence data.
 The history of the last accessed cache entries is used to predict a sequence of future accesses.
-The predicted sequence is then applied to conventional cache replacement algorithms, like LFU or LRU, to prevent unnecessary evictions. 
+The predicted sequence is then applied to conventional cache replacement algorithms, 
+like LFU or LRU, to prevent unnecessary evictions. 
 
 \section{Summary}
 \label{sec:summary}
@@ -747,7 +760,8 @@ Because evicting entries that will be needed in the near future leads to further
 cache misses and thus to lower cache performance.
 Therefore, cache replacement policies are used to decide which entry should be evicted from the cache.
 Cache replacement policies can use additional data structures or per-entry metadata to guide their decision.
-Various cache replacement policies have been developed, which can range from rather simple queue based policies to policies based 
+Various cache replacement policies have been developed, which can range from rather simple queue 
+based policies to policies based 
 on complex heuristics or machine learning.
 
 We looked at four early developed policies.
@@ -774,7 +788,8 @@ This could either mean tracking more meta data for each cache entry, like LRFU, 
 of ghost entries, which are entries where only the meta data or a reference to the data stays in the cache, like 2Q.
 
 The third strategy we considered was to identify specific access patterns and adopt the behavior of the cache accordingly.
-One example of this strategy is LIRS, which uses the Inter-Reference Recency to categorize the cache entries in hot and cold entries.
+One example of this strategy is LIRS, which uses the Inter-Reference Recency to categorize 
+the cache entries in hot and cold entries.
 LIRS keeps the hot entries in the cache and prefers to evict the cold entries.
 Another example is ARC, which uses two queues.
 One for entries that have been accessed once in the recent past, and a 
@@ -788,7 +803,7 @@ is a relatively new trend that has emerged in recent years.
 The used ml-techniques range from simple models with low overhead, which are suitable for online learning, to
 more sophisticated techniques with pre-trained neural networks.
 
-The replacement of cache memories is a current research topic, which is becoming even more important 
+Overall, cache replacement policies are a current research topic, which is becoming even more important 
 due to the widening processor memory gap.
 New opportunities are emerging through the use of increasingly better ML techniques.
 Nevertheless, there is still no general best policy that works in all use cases and can adapt to changing access patterns.
@@ -822,14 +837,17 @@ However, for more traditional workloads where the cache fits in the main memory,
 Although FIFO is a simple to implement cache replacement algorithm with O(1) complexity for insertion and removal 
 and therefore provides good throughput and good scalability.
 The major drawback was the lower hit rate compared to LRU-based algorithms.
-The authors of this paper \cite{yang2023fifo} show that FIFO can achieve comparable performance to LRU based cache replacement algorithms.
+The authors of this paper \cite{yang2023fifo} show that FIFO can achieve comparable 
+performance to LRU based cache replacement algorithms.
 To improve FIFO, they used Quick Demotion and Lazy Promotion.
 
 Quick Demotion is based on the observation that often newly inserted entries also leave the cache quickly.
 To implement this, the cache is divided into a large main FIFO queue that covers 90\% of the capacity and a 
 smaller FIFO queue, the QD queue, covers 10\% of the cache capacity.
-Furthermore, there is a ghost queue with the same capacity as the cache, where the reference to the evicted entries is stored.
-So newly inserted entries are added to the QD queue. When the QD queue reaches its capacity, the entry at the front is evicted and added either to 
+Furthermore, there is a ghost queue with the same capacity as the cache, 
+where the reference to the evicted entries is stored.
+So newly inserted entries are added to the QD queue. When the QD queue reaches its capacity, 
+the entry at the front is evicted and added either to 
 the ghost queue if it was not referenced during its time in the QD queue, or to the main FIFO queue if it was referenced.
 Also, if a cache miss occurs and that entry is in the ghost queue, it will be directly added to the main FIFO queue.
 The idea of Quick Demotion is not new and some cache replacement policies use similar approaches, like ARC or 2Q.
@@ -1026,7 +1044,7 @@ The \texttt{remove}()-function is used for unmodified entries and \texttt{force\
 
 \bigskip
 
-\begin{lstlisting}[language=Rust,mathescape=true,caption={simplified Cache trait without type aliases, generics, function parameters and function return types},label=lst:simplified Cache trait]
+\begin{lstlisting}[language=Rust,mathescape=true,caption={Simplified Cache trait without type aliases, generics, function parameters and function return types.},label=lst:simplified Cache trait]
 trait Cache {
     fn new();
     fn contains_key();
@@ -1117,9 +1135,9 @@ These steps are repeated until an entry is found whose reference bit is set to 0
 New insert entries are placed behind the hand which represents the tail of the list, if we see the hand as the head of the list.
 
 \bigskip
+\newpage
 
-% should try to get listing on one page, better to understand that way
-\begin{lstlisting}[mathescape=true,caption=CLOCK replacement algorithm in pseudocode,label=lst:clock-algorithm]
+\begin{lstlisting}[mathescape=true,caption={CLOCK replacement algorithm in pseudocode.},label=lst:clock-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
@@ -1182,7 +1200,8 @@ The \cref{lst:gclock-algorithm} shows the steps during the request for an entry.
 
 \bigskip
 
-\begin{lstlisting}[mathescape=true,caption=GCLOCK replacement algorithm in pseudocode,label=lst:gclock-algorithm]
+
+\begin{lstlisting}[mathescape=true,caption={GCLOCK replacement algorithm in pseudocode.},label=lst:gclock-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
@@ -1284,8 +1303,9 @@ The \cref{lst:clock-pro-algorithm} shows the steps during the request for an ent
 What we see is that all hands work together to find an entry for eviction, \cref{lst:clock-pro-algorithm} line 12 to line 65.
 
 \bigskip
+\newpage
 
-\begin{lstlisting}[mathescape=true,caption=CLOCK-Pro replacement algorithm in pseudocode,label=lst:clock-pro-algorithm]
+\begin{lstlisting}[mathescape=true,caption={CLOCK-Pro replacement algorithm in pseudocode.},label=lst:clock-pro-algorithm]
 $\textcolor{ovgu-blue}{Input}$
 	Clk: Clock
 	entry: entry on I/O request
@@ -1628,7 +1648,7 @@ As secondary storage, we used the home folder, which is shared between all nodes
 		\textbf{Secondary storage} & shared CephFS across all nodes \\
 		\hline
 	\end{tabular}
-	\caption{Hardware for evaluation}
+	\caption{Hardware used for evaluation.}
 	\label{tab:hardware node}
 \end{table}
 
@@ -1696,7 +1716,14 @@ The fsync parameter (line 14) defines that after 131072 writes fio will synchron
 data, so that all data that is currently copied for write will actually be written back.
 This is required to reduce fragmentation.
 
+In \ref{lst:configuration haura}, we show the configuration file for Haure.
+The cache size has been set at 1GiB, which is relatively small to better 
+represent the performance of the different cache replacement policies.
+If we set the cache capacity higher, the hit rate would be 100\% 
+in most cases, or we would have to use very large I/O sizes to actually be able to detect differences.
+
 \bigskip
+\newpage
 
 \begin{lstlisting}[mathescape=true,caption=example fio jobfile, label=lst:fio jobfile]
 [test01]
@@ -1715,11 +1742,7 @@ filesize=32g
 fsync=131072
 \end{lstlisting}
 
-In \ref{lst:configuration haura}, we show the configuration file for Haure.
-The cache size has been set at 1GiB, which is relatively small to better 
-represent the performance of the different cache replacement policies.
-If we set the cache capacity higher, the hit rate would be 100\% 
-in most cases, or we would have to use very large I/O sizes to actually be able to detect differences.
+
 
 
 \newpage
@@ -1861,6 +1884,7 @@ CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
 	\label{fig:single 50p read}
 \end{figure}
 
+\newpage
 \section{Multi threaded}
 \subsection{Random read only Benchmark}
 
@@ -1998,7 +2022,7 @@ The change we had to make to CLOCK-Pro so that we could implement it in Haura.
 For the random 90\% read and 10\% write Benchmark the results, 
 \cref{fig:multi zipf rw_90to10} to \cref{fig:multi uniform rw_90to10}, 
 are not as clear as in the read only benchmark.
-There is no policy that clearly outperforms the other.
+There is no policy that clearly outperforms the other policies.
 
 ML-CLOCK has a good performance for low thread counts and for zipf- and normal-distribution.
 But for 16 threads and uniform distribution, ML-CLOCK shows significantly worse performance than the other policies.
@@ -2152,7 +2176,8 @@ therefore performs worse than the other cache replacement policies in such workl
 Furthermore, the performance of CLOCK and GCLOCK, with the exception of uniform distribution, 
 is more distinct from each other.
 
-What also stands out for this specific benchmark, with equal ratio of read and write operation \cref{fig:multi uniform rw_50to50}, 
+What also stands out for this specific benchmark, 
+with equal ratio of read and write operation \cref{fig:multi uniform rw_50to50}, 
 is that for the uniform random distribution, the hit rate increases with a larger thread count.
 This is unexpected, since for all other benchmarks the uniform distribution hit rate for all cache replacement 
 polices remains about the same regardless of thread count and file size, 
@@ -2330,9 +2355,10 @@ which is disadvantageous when the access patterns are more complex, as in the ca
 The weaker performance of CLOCK-Pro in the read-only benchmarks, both single and multi-threaded, 
 can likely be attributed to our changes to CLOCK-Pro for Haura.
 The change was that non-resident cold entries cannot be converted to resident hot entries.
-This change is likely to be more noticeable in read only workloads, as in this case there is no synchronization
-which clears the cache.
-\todo[inline]{hier fehlt noch was}
+This change is likely to be more noticeable in read only workloads, 
+as in this case, there is no synchronization which clears the cache.
+Thus, the cache exists longer and there are more cases where a non-resident cold entry 
+should be converted into a hot entry.
 
 As a result, it can be said that for all implemented cache replacement policies and 
 single threaded use cases ML-CLOCK should be used.
@@ -2348,26 +2374,26 @@ However, neither of these options is optimal and may produce suboptimal results 
 
 \chapter{Conclusion}
 \label{cha:conclusion}
-% could be conclusions and future work
 % 5-10%, 2-5 Seiten
 
 For this thesis, we implemented and evaluated cache replacement policies for a copy-on-write 
 optimized hierarchical storage stack.
 We used Haura as the storage stack because Haura is designed as a research storage stack and 
-combines all relevant submodules from command line interface and data management 
+combines all relevant sub modules from command line interface and data management 
 to benchmark tools in a single code base.
 
 We examined what cache replacement methods are and looked at 
 four early developed and commonly used policies, which were  Bélády's algorithm, FIFO, LRU and LFU.
 Although these cache replacement strategies are still commonly used, they all have some shortcomings 
 and workloads where they under perform.
-Therefore, have considered strategies to develop improved cache replacement policies.
+Therefore, we have considered strategies to develop improved cache replacement policies.
 
 We followed these strategies when selecting the cache replacement policies we implemented and evaluated.
-CLOCK policy was already implemented and is a variant of LRU.
+The CLOCK policy was already implemented and is a variant of LRU.
 The first policy we implemented, GCLOCK, is a generalization of CLOCK that uses a reference counter 
 instead of a reference bit and follows the strategy of using more historical information.
-For our second implemented policy, we chose CLOCK-Pro, which follows the strategy of detecting and adapting to access patterns.
+For our second implemented policy, we chose CLOCK-Pro, which follows the strategy of 
+detecting and adapting to access patterns.
 This is accomplished by dividing the cache entries into hot and cold entries based on 
 their Inter-Reference recency, which are treated differently.
 The last policy implemented was ML-CLOCK, which uses a single-layer perceptron, 
@@ -2379,7 +2405,7 @@ meant that the implemented policies had to be modified to ensure the correct fun
 
 To evaluate the different cache policies, we created several benchmarks ranging from 
 random read only workloads to mixed random read write workloads for single and multi-threading. 
-For the random distribution we used zipf, normal, zoned and uniform distribution to simulated different workload behavior.
+For the random distribution, we used zipf, normal, zoned and uniform distribution to simulate different workload behavior.
 
 In read-only benchmarks, both single and multi-threaded, CLOCK and GCLOCK performed best, 
 and in mixed single-threaded benchmarks, ML-CLOCK outperformed the other strategies. 
@@ -2391,7 +2417,7 @@ shows significantly worse performance compared to the other strategies, especial
 with a high thread count and file size.
 
 Furthermore, we have observed that for both single and multi-threaded, 
-the cache hit rate decreases significantly with larger percentage of write operation.
+the cache hit rate decreases significantly with a larger percentage of write operations.
 This can be explained by the fact that with an increased number of writes there are 
 also more pinned entries that cannot be removed from the cache.
 
@@ -2401,7 +2427,7 @@ In the single threaded read only workloads, CLOCK and GCLOCK performed better,
 but read only workloads are uncommon for real applications. 
 
 It is more difficult to make a recommendation for use cases with multiple threads, 
-since the performance of the implemented strategies was also inconsistent and there is no clear better strategy.
+since the performance of the implemented strategies was inconsistent and there is no clearly better strategy.
 An option would be to use ML-CLOCK for a low number of threads and switch to CLOCK-Pro 
 for higher thread counts.
 A different option would be to use CLOCK-Pro for all multi threaded applications.
@@ -2412,20 +2438,21 @@ Nevertheless, both options are not optimal and may lead to suboptimal results fo
 This work provides several possibilities for future work.
 First, the evaluation should be extended to traces of real workloads and not just synthetic benchmarks.
 Since synthetic benchmarks are only of limited use for predicting performance for  
-application with a non static accesses distribution or very specific accesses patterns.
+application with a non static accesses distribution or very specific access patterns.
 
-Second, we saw that ML-CLOCK also was intended to reduce write operations to the underlying storage medium.
+Second, we saw that ML-CLOCK was also intended to reduce write operations to the underlying storage medium.
 For our test system which uses CephFS we could not test if this is actually the case and ML-CLOCK reduces write operations
 compared to the other implemented policies.
 
 Third, there are various other cache replacement policies that are promising to achieve better performance.
-In \cref{cha:background} and \cref{cha:related work} we have presented some further cache replacement policies that can be considered.
-Especially \cite{yang2023fifo} should be implementable with little effort.
-Since all the implemented cache replacement policies are clock-based and therefore already use some form of Lazy promotion and 
-only Quick Demotion needs to be implemented.
+In \cref{cha:background} and \cref{cha:related work} we have presented some further cache replacement policies 
+that can be considered.
+in particular \cite{yang2023fifo} should be implementable with little effort.
+Since all the implemented cache replacement policies are clock-based and therefore already 
+use some form of Lazy promotion and only Quick Demotion needs to be implemented.
 
-Fourth, the multi threaded workloads in particular causes problems, so this area should be further investigated.
-One approach could be instead of using one cache for all threads, to split the cache and give each thread his own cache.
+Fourth, the multi threaded workloads in particular cause problems, so this area should be further investigated.
+One approach could be, instead of using one cache for all threads, to split the cache and give each thread his own cache.
 This might allow to leverage ML-CLOCK's good performance for single threaded workloads for multi threaded workloads as well.
 
 Fifth, since we have seen that the change we have made to CLOCK-Pro and ML-CLOCK 
