@@ -806,16 +806,16 @@ and are intended to be used in multi-threaded applications.
 This paper the authors proposes to reevaluate the assumption that LRU 
 has better performance than FIFO, as stated in \cite{van1992lru}.
 There were two main reasons for this reevaluation.
-First, caches are getting increasingly larger and managing the cache metadata can not be done entirely in main memory.
+First, caches are getting increasingly larger and managing the cache metadata can not be done entirely in the main memory.
 As a result, the management will be partially shifted to persistent storage media.
-In this cases FIFO can be the better choice since only the front and the end of the FIFO queue need to be in main memory
+In this case, FIFO can be the better choice since only the front and the end of the FIFO queue need to be in main memory
 and no additional metadata has to be updated.
-This means that the largest part of the FIFO queue can be swapped out of main memory.
+This means that the largest part of the FIFO queue can be swapped out of the main memory.
 The second reason is that the emergence of new workloads could mean that old assumptions no longer apply. 
 Cache replacement policies in the past were designed for workloads around memory, files and block storage. 
 But new workloads for big data and machine learning could have different characteristics.
 The authors concluded that, especially for large caches, FIFO may be a better choice than LRU because of the lower overhead. 
-However, for more traditional workloads where the cache fits in main memory, LRU is still the better choice.
+However, for more traditional workloads where the cache fits in the main memory, LRU is still the better choice.
 
 \section*{FIFO can be Better than LRU: the Power of Lazy Promotion and Quick Demotion by \cite{yang2023fifo}}
 
@@ -823,17 +823,17 @@ Although FIFO is a simple to implement cache replacement algorithm with O(1) com
 and therefore provides good throughput and good scalability.
 The major drawback was the lower hit rate compared to LRU-based algorithms.
 The authors of this paper \cite{yang2023fifo} show that FIFO can achieve comparable performance to LRU based cache replacement algorithms.
-To improve FIFO they used Quick Demotion and Lazy Promotion.
+To improve FIFO, they used Quick Demotion and Lazy Promotion.
 
-Quick Demotion is based on the observation that often newly insert entries also leave the cache quickly.
+Quick Demotion is based on the observation that often newly inserted entries also leave the cache quickly.
 To implement this, the cache is divided into a large main FIFO queue that covers 90\% of the capacity and a 
-smaller FIFO queue, the QD queue, that covers 10\% of the cache capacity.
-Furthermore, there is a ghost queue with the same capacity as the cache, where the reference of the evicted entries is stored.
-So newly insert entries are added to the QD queue. When the QD queue reaches its capacity, the entry at the front is evicted and added either to 
+smaller FIFO queue, the QD queue, covers 10\% of the cache capacity.
+Furthermore, there is a ghost queue with the same capacity as the cache, where the reference to the evicted entries is stored.
+So newly inserted entries are added to the QD queue. When the QD queue reaches its capacity, the entry at the front is evicted and added either to 
 the ghost queue if it was not referenced during its time in the QD queue, or to the main FIFO queue if it was referenced.
 Also, if a cache miss occurs and that entry is in the ghost queue, it will be directly added to the main FIFO queue.
-The idea of Quick Demotion is not new and some cache replacement policies uses similar approaches, like ARC or 2Q.
-However the difference is that this approach allows for an even quicker eviction of newly inserted entries.
+The idea of Quick Demotion is not new and some cache replacement policies use similar approaches, like ARC or 2Q.
+However, the difference is that this approach allows for an even quicker eviction of newly inserted entries.
 Besides, Quick Demotion can be used in conjunction with different cache replacement policies.
 This way, Quick Demotion is used for newly inserted entries, while the main cache follows a different cache replacement policy, 
 not necessarily a FIFO.
@@ -841,7 +841,8 @@ not necessarily a FIFO.
 Lazy promotion attempts to keep frequently accessed entries in the cache with minimal overhead.
 To achieve this, promotion occurs only on eviction, not on cache hits as in LRU and LFU, 
 which reduces the overhead of processing the metadata.
-Example for this would be the reinsertion of referenced entries to the FIFO queue.
+An Example for this would be the reinsertion of referenced entries to the FIFO queue,
+also called second chance policy.
 
 Furthermore, the authors propose modular cache replacement policies where a state of the art cache replacement 
 policy is used as the main cache and  other techniques such as Quick Demotion and Lazy Promotion 
@@ -857,26 +858,24 @@ The dynamic cache, on the other hand, is used for workload adaptation
 and works like a regular list-based cache, such as LRU or LFU.
 The FrozenHot cache works in three phases which are repeated periodically.
 The first phase is the learning phase, which is used to learn the entries that should be placed in the frozen cache.
-Also the ratio between frozen cache and dynamic cache capacity is decided during this phase and 
+Also, the ratio between frozen cache and dynamic cache capacity is decided during this phase and 
 can adopt to changing workloads.
-The second phase is the construction phase, which is used to build the Frozen Cache.
+The second phase is the construction phase which is used to build the Frozen Cache.
 The third phase, which is longer than the other two phases, is the frozen phase.
-% below this check again with deepl reached dayly limit
-During this phase, the frozen cache remains fixed to allow faster accesses on cache hits without lock contention.
+During this phase, the frozen cache remains fixed to allow faster access on cache hits without lock contention.
 Overall, this is an interesting approach for a scalable cache in multi threaded applications.
 
 
 \section*{TinyLFU: A highly efficient cache admission policy by \cite{einziger2017tinylfu}}
-% check this with deepl
 
-The authors of this paper propose a new frequency based cache replacement policy W-TinyLFU which uses a bloom filter to 
-approximate the frequency information for the cache entries and is specifically designed for skewed accesses distributions.
-So even for large caches that do not fit entirely in main memory, the bloom filter is small enough to fit and allows the 
+The authors of this paper propose a new frequency based cache replacement policy W-TinyLFU, which uses a bloom filter to 
+approximate the frequency information for the cache entries and is specifically designed for skewed access distributions.
+So, even for large caches that do not fit entirely in the main memory, the bloom filter is small enough to fit and allows the 
 management of the metadata in main memory even for large caches.
 W-TinyLFU consists of three components.
 First, the window, a FIFO queue, into which new cache entries are inserted.
 This queue is relatively small, ranging from 1\% of the cache capacity.
-The second component is the main cache which makes up the rest of the capacity.
+The second component is the main cache, which makes up the rest of the capacity.
 The Bloom filter is located between the two.
 Every time the window queue reaches its limit.
 The front entry of the window, the window victim, is checked through the bloom filter
@@ -884,7 +883,7 @@ if this entry should be promoted to the main cache by comparing the window victi
 possible victim entry from the main cache.
 When the frequency estimation for the window victim is higher than the main cache victim,
 the window victim will be promoted to the main cache and the main cache victim will be evicted.
-Other wise the window victim will be evicted. 
+Otherwise, the window victim will be evicted. 
 The window acts like a Quick Demotion method, so that newly inserted entries can leave the cache quickly.
 The advantage of W-TinyLFU is that it does not require ghost entries, which reduces the management overhead and space requirements 
 for the cache.
@@ -897,7 +896,7 @@ for multi-threaded applications.
 
 The paper by \cite{eytan2020s} shows that with the emergence of new workloads, such as machine learning, and 
 increasing cache sizes, assumptions such as the independent reference model may not apply.
-In particular, the authors address that FIFO may be a better choice than LRU in cases where the cache does not fit in main memory.
+In particular, the authors conclude that FIFO may be a better choice than LRU in cases where the cache does not fit in the main memory.
 
 The work of \cite{yang2023fifo} is interesting because not only does it present a cache replacement policy based on simple FIFO queues, 
 which is easy to implement and scalable, but also because the approaches of Quick Demotion and Lazy Promotion 
@@ -905,13 +904,13 @@ can be applied to other cache replacement policies.
 For future work, Quick Demotion could be added to the already implemented cache replacement policies.
 
 The FrozenHot cache by \cite{qiu2023frozenhot} achieves scalability by periodically "freezing" 
-a portion of the cache, this a new approach that should be investigated further. 
+a portion of the cache. This a new approach that should be investigated further. 
 Also, FrozenHot can be combined with different list-based cache policies, such as LRU or LFU.
 
 The last cache replacement policy we considered was W-TinyLFU by \cite{einziger2017tinylfu},
 which is a scalable variant of LFU.
 The better scalability compared to LFU is achieved by compactly handling the metadata in a bloom filter.
-Thus W-TinyLFU should be considered for large caches with skewed accesses distributions.
+Thus W-TinyLFU should be considered for large caches with skewed access distribution.
 
 
 \chapter{Design and Implementation}
@@ -951,7 +950,7 @@ pub struct ObjectPointer<D> {
     pub(super) generation: Generation,
 }
 \end{lstlisting}
-% pub(super) makes an item visible to the parent module. This is equivalent to pub(in super).
+
 
 The struct fields \texttt{offset}, \texttt{size}, \texttt{checksum} and \texttt{decompression\_tag}, in \cref{lst:ObjectPointer struct}, 
 are used to read an object from disk and decompress it.
@@ -991,7 +990,7 @@ The DMU manages the cache and the states of each \emph{ObjRef} as shown in \ref{
 The cycle starts with the creation of an object in modified state. When the DMU starts the write back of the object, the state
 is changed to in write back state.
 If the object is modified during write back through the steal function, it changes the state back to modified.
-When the write back is finished the object state changes to unmodified.
+When the write back is finished, the object state changes to unmodified.
 An unmodified object can either change the state to modified if the object has been modified or evicted from cache to disk.
 And lastly, any object on disk can be fetched in cache and will be in unmodified state.
 
@@ -1049,7 +1048,7 @@ trait Cache {
 
 The second difference is that it must be possible to change the key for cache entries.
 Because an object in cache can change its state. 
-Therefore we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
+Therefore, we have two functions, \cref{lst:simplified Cache trait} line 8 and line 9. 
 Again two functions for unmodified and pinned entries.
 
 Another difference is that the cache must be able to handle cache entries of any size.
@@ -1057,19 +1056,19 @@ The handling of cache entries of arbitrary size is managed by the DMU.
 Each fetched entry is always inserted into the cache, and then the eviction function is invoked 
 until the cache capacity is again below the specified cache size.
 So the cache size is a soft limit that can be temporarily exceeded, not a hard limit, which would mean that the 
-eviction function is called before inserting so that the cache size is never exceeded.
+eviction function is called before inserting, so that the cache size is never exceeded.
 
 Furthermore, we have added the \texttt{get\_mut}()-function, \cref{lst:simplified Cache trait} line 5, 
 since the \texttt{get}()-function does not allow that the state of the cache changes, 
-respectively atomics are used and thus a read-lock is sufficient.
+respectively, atomics are used and thus a read-lock is sufficient.
 
 But for ML-CLOCK, it is necessary that we can change the cache.
 As we will show in \cref{sub:ml-clock}, ML-CLOCK uses two linked lists.
 When a cache hit occurs that also modifies the entry,
 the modified entry is evicted from one linked list and inserted into the other linked list.
-This movement cannot be realized with atomic operation.
-Thus an exclusive write-lock is necessary for this case. 
-Therefore we implemented \texttt{get\_mut}()-function that uses an exclusive write-lock.
+This movement cannot be realized with atomic operations.
+Thus, an exclusive write-lock is necessary for this case. 
+Therefore, we implemented \texttt{get\_mut}()-function that uses an exclusive write-lock.
 
 
 \section{Implemented Cache Replacement Policies}
@@ -1085,10 +1084,10 @@ do most of the work during the eviction of an entry, which should be infrequent.
 We followed the improvement strategies from the \cref{sec:improved cache replacement policies}
 in selecting the cache replacement policies to implement.
 The CLOCK policy was already implemented and is an approximation of LRU.
-The next policy we consider is GCLOCK, a generalization of CLOCK that uses more history information.
+The next policy we consider is GCLOCK, a generalization of CLOCK that uses more historical information.
 CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
 It uses the Inter-Reference recency to distinguish between hot and cold entries and handle these entries differently.
-The last implemented cache replacement policy, ML-CLOCK, is an example for a policy that uses machine learning.
+The last implemented cache replacement policy, ML-CLOCK, is an example of a policy that uses machine learning.
 A model is trained based on the removed entries and the cache hits. 
 This model is then used to find the entry for the eviction.
 
@@ -1111,7 +1110,6 @@ Also, each entry has a reference bit that is initially set to 0 and is set to 1 
 \end{figure}
 
 \cref{lst:clock-algorithm} shows the steps during the request of an entry.
-% this doesn't sound right.
 To find an entry to evict, we look at the entry to which the hand is pointing.
 If the reference bit for this entry is 0, we have found the entry to be evicted.
 If the reference bit is 1, we set the reference bit to 0 and move the hand to the next entry.
@@ -1170,18 +1168,17 @@ The weaker performance on workloads with weak locality, like scanning and loopin
 
 \subsection{GCLOCK}
 
-%need to change in Haura source code
 The GCLOCK replacement policy \cite{smith1978sequentiality} is a generalization of CLOCK policy.
 However, the principle is already mentioned for the first time in \cite{corbato1968paging}.
 Like CLOCK, GCLOCK uses a circular linked list with one hand.
-But instead of only using on reference bit, a reference counter associated to each cache entry, is used.
+But instead of only using one reference bit, a reference counter associated to each cache entry, is used.
 When a cache hit occurs, the reference counter is incremented up to $K$ times.
 The parameter $K$ can be chosen arbitrarily.
 Also, like CLOCK, to find an entry for eviction we look at the entry the hand points to.
 If the reference counter for this entry is 0, that entry is evicted.
 Otherwise, we decrement the reference counter and move the pointer to the next entry 
 until we find an entry with a reference counter of 0.
-The \cref{lst:gclock-algorithm} shows the steps during the request of an entry.
+The \cref{lst:gclock-algorithm} shows the steps during the request for an entry.
 
 \bigskip
 
@@ -1241,7 +1238,7 @@ However, CLOCK-Pro, unlike LIRS, is adoptable because it does not require a pred
 To achieve better efficiency than LIRS, CLOCK-Pro combines the LRU priority queue and a FIFO queue of LIRS in a circularly linked list.
 And instead of using only one hand, as in CLOCK, three hands are used to provide the functions of LIRS, 
 as shown in \cref{fig:clock in clock-pro}.
-For our implementation, we use a circular double linked list instead of circular single linked list, like in CLOCK.
+For our implementation, we use a circular doubly linked list instead of a circular singly linked list, like in CLOCK.
 Because in some cases we need to move a hand one entry backwards (move to predecessor) to correctly implement the motion of all hands.
 Since the hands should not point to the same entry.
 
@@ -1266,7 +1263,6 @@ The $\textbf{Hand}_{hot}$ marks the tail of the list and therefore points to the
 Also, $\textbf{Hand}_{hot}$ turns unreferenced hot entries into cold entries  and 
 removes the reference for referenced hot entries when it passes over them.
 
-
 The $\textbf{Hand}_{cold}$ is used to find the entry for eviction. 
 In this respect $\textbf{Hand}_{cold}$ operates like the hand in CLOCK.
 This means that $\textbf{Hand}_{cold}$ will traverse all entries until it finds a resident cold entry 
@@ -1275,21 +1271,19 @@ If the entry to be evicted is in the test phase, it remains in the cache as a no
 if it is not in the test phase, it is completely evicted from the cache.
 So if there are only hot entries in the cache,  
 we must first convert hot entries to cold entries in order to evict an entry.
-Furthermore, $\textbf{Hand}_{cold}$ turn referenced cold entries in test phase to hot entries. 
-This is because the reference during test phase means that the Inter-Reference recency for this entry is low enough 
+Furthermore, $\textbf{Hand}_{cold}$ turn referenced cold entries in the test phase to hot entries. 
+This is because the reference during the test phase means that the Inter-Reference recency for this entry is low enough 
 to be a categorized as an hot entry.
 
-And the $\textbf{Hand}_{test}$ marks the last entry in test phase and ends the test phase for all resident cold entries when it moves over them. 
+And the $\textbf{Hand}_{test}$ marks the last entry in the test phase and ends the test phase for all resident cold entries when it moves over them. 
 It also evicts passed non-resident cold entries from the cache.
 The reason for this is that non-resident cold entries that have not already been converted to hot entries have a high Inter-Reference recency 
 and therefore should not become hot entries.
 
-The \cref{lst:clock-pro-algorithm} shows the steps during the request of an entry.
+The \cref{lst:clock-pro-algorithm} shows the steps during the request for an entry.
 What we see is that all hands work together to find an entry for eviction, \cref{lst:clock-pro-algorithm} line 12 to line 65.
 
 \bigskip
-% better to use newpage in final version to avoid that the listing spans over 3 pages
-%\newpage
 
 \begin{lstlisting}[mathescape=true,caption=CLOCK-Pro replacement algorithm in pseudocode,label=lst:clock-pro-algorithm]
 $\textcolor{ovgu-blue}{Input}$
@@ -1365,9 +1359,9 @@ return entry
 For a cache with capacity $m$ applies $m = m_c + m_h$.
 Here $m_c$ is the capacity for resident cold entries and $m_h$ is the capacity for hot entries.
 Furthermore, at most $m$ non-resident cold entries can be stored.
-So that the cache actual size can be at most $2m$ entries.
+So that the cache's actual size can be at most $2m$ entries.
 To achieve adaptability, the number of hot and cold entries is not fixed.
-The capacity for resident cold entries $m_c$ is increased by one, if an cold entry is accessed during its test phase 
+The capacity for resident cold entries, $m_c$ is increased by one, if a cold entry is accessed during its test phase 
 and $m_c$ is decreased by one, if a cold entry leaves its test phase without being re-accessed.
 As we see in \cref{lst:clock-pro-algorithm} the actual hand movements are triggered by the count of hot and cold entries and the 
 capacity for hot and cold entries.
@@ -1383,11 +1377,11 @@ In our implementation in Haura, we have to modify the CLOCK-Pro, due to the fact
 So we can not turn non-resident cold entries to hot entries, which are always resident.
 Because this would imply that the cache tells the DMU what to do and not the other way around.
 
-Furthermore, the treatment of a pinned entry during eviction, is more complicated then for CLOCK and GCLOCK.
-We have already seen that for eviction all pointers work together. If the entry intended for eviction remains in the cache, it can happen that a 
+Furthermore, the treatment of a pinned entry during eviction, is more complicated than for CLOCK and GCLOCK.
+We have already seen that for eviction all pointers work together. If the entry intended for eviction remains in the cache, it could happen that a 
 hand gets stuck on this entry, since the entry is pinned it cannot be removed. This can lead to an endless loop. To prevent this, this entry is 
 removed and temporally saved. So that the hands can work as intended.
-If it then occurs that the entry is pinned, the entry is again insert into the cache.
+If it then occurs that the entry is pinned, the entry is again inserted into the cache.
 
 \subsection{ML-CLOCK}
 \label{sub:ml-clock}
@@ -1397,32 +1391,32 @@ follows the recent trend of incorporating machine learning techniques.
 The idea for ML-CLOCK is to use recency and frequency information for eviction.
 In order to achieve adaptability, we cannot use a fixed weighting parameter as we have seen with LRFU \cite{lee2001lrfu}. 
 If the weighting parameter is fixed, we cannot adapt to the access pattern.
-So instead of using a fixed parameter to decide what is more important, recency 
+So, instead of using a fixed parameter to decide what is more important, recency 
 or frequency,
 ML-CLOCK learns the weighting parameter from previous decisions and is therefore adaptive.
 
 In addition, ML-CLOCK is designed to minimize writes to the underlying storage devices.
 The motivation for this is that write operations take more time than read operations.
-Also, some memory types like flash memory, can only write in blocks.
-Thus we can minimize write operations, if we manage to write back adjacent data blocks, 
+Also, some memory types, like flash memory, can only write in blocks.
+Thus, we can minimize write operations, if we manage to write back adjacent data blocks, 
 instead of writing back data scattered across a storage device.
 
 For each entry we have a reference bit, a reference counter and a time stamp of the 
 last accesses as metadata. 
-Also the entries are categorized in clean (unmodified) entries and dirty (modified) entries.
+Also, the entries are categorized into clean (unmodified) entries and dirty (modified) entries.
 And in contrast to the other implemented cache replacement policies,
 ML-CLOCK uses two circular linked lists.
 One for the clean entries which we refer to as clean-clock 
-and a second for the dirty entries which we will refer to as dirty-clock
+and a second for the dirty entries, which we will refer to as dirty-clock
 which is also sorted by the logical block address for each entry.
-Both circular list have one hand, the c-hand for the clean-clock and 
+Both circular lists have one hand, the c-hand for the clean-clock and 
 the d-hand for the dirty-clock.
-When the d-hand move to the next entry, it moves the next entry 
+When the d-hand moves to the next entry, it moves to the next entry 
 which has the closest address in the dirty clock.
 This ensures that sequential blocks are written back, if possible.
 Furthermore, we use a ghost queue which saves the metadata of evicted entries and 
 is used to train the single-layer perceptron(SLP).
-At most the ghost queue can store as many entries as the cache, clean-clock and dirty-clock together.
+At most, the ghost queue can store as many entries as the cache, clean-clock and dirty-clock together.
 
 ML-CLOCK uses a single-layer perceptron(SLP), as a
 binary classifier, which in our case predicts whether an entry should be evicted or not.
@@ -1432,7 +1426,6 @@ SLP has low time and space overhead,
 making it more suitable for online learning.
 Furthermore, SLP are not prone to overfitting.
 
-%To predict if an entry will be evicted the following equation \ref{prediction} is used, 
 To predict if an entry will be evicted we use equation \ref{prediction},
 where $w_d, w_c$ and $w_b$ represents the weight for reuse-distance, reference count and the bias.
 The variables $x_d$ and $x_c$ represents the metadata values from the entry reuse-distance and the reference count.
@@ -1461,14 +1454,14 @@ In addition to learning the weights $w_d, w_c$ and $w_b$, the equation \ref{lear
 \end{split} \label{learning}
 \end{align}
 
-The learning rate $lr$ controls how much the weights changes during training.
-The variable $v_{predict}$ is the result of an prediction, equation \ref{prediction}, for an entry and 
+The learning rate $lr$ controls how much the weights change during training.
+The variable $v_{predict}$ is the result of a prediction, equation \ref{prediction}, for an entry and 
 $v_{expect}$ is the correct answer for this prediction, as we see in listing \ref{lst:clock-algorithm}.
 Both $v_{predict}$ and $v_{expect}$ can either be 1 or 0.
 Thus, the term $(v_{expect} - v_{predict})$ defines if the weights are updated or not.
 
 
-\cref{lst:clock-algorithm} shows the steps during the request of an entry and also shows when 
+\cref{lst:clock-algorithm} shows the steps during the request for an entry and also shows when 
 the prediction and the learning take place.
 
 \bigskip
@@ -1519,15 +1512,14 @@ return entry
 \end{lstlisting}
 
 On a cache hit, we update the metadata for the entry and start a learning operation.
-We set $v_{expect}$ to 1, because the requested entry is contained in cache.
+We set $v_{expect}$ to 1, because the requested entry is contained in the cache.
 Then we use the metadata of the entry to make a prediction, equation \ref{prediction}, and get $v_{predict}$.
 The weights are updated or not based on $v_{expect}$ and $v_{predict}$.
 In addition, a cache hit may cause a clean entry to become a dirty entry.
 Therefore, the entry is moved from the clean-clock to the dirty-clock.
 For this case, we added the \texttt{get\_mut}()-function to the Cache trait.
-% could be insert chapter for cache trait.
 
-To find a entry for eviction during a cache miss, 
+To find an entry for eviction during a cache miss, 
 we search for eviction candidates in both clocks.
 Like the hand in CLOCK, the c-hand and d-hand search for an entry with the reference bit set to 0.
 So there are two eviction candidates, the c-candidate from the clean-clock and the d-candidate from the dirty-clock.
@@ -1563,15 +1555,15 @@ Additionally, the entry is evicted from the Ghost queue and added back to the ca
 In our implementation, we do not reinsert the entry into the cache for the same reason as in CLOCK-Pro, the DMU
 manages which entries are inserted into the cache and not the cache itself.
 
-In case the entry for eviction is not already in the ghost queue, it will be insert into the ghost queue.
-A learning operation is triggered if the ghost queue exceeds it capacity and thus a ghost entry at the front leaves the ghost queue.
+In case the entry for eviction is not already in the ghost queue, it will be inserted into the ghost queue.
+A learning operation is triggered if the ghost queue exceeds its capacity and thus a ghost entry at the front leaves the ghost queue.
 
 So there are three possibilities to trigger a learning operation during a cache hit, 
 if the entry for eviction is already in the ghost queue or
-if a entry must leave the ghost queue.
+if an entry must leave the ghost queue.
 
 The case that the entry for eviction is pinned can be handled the same way as in CLOCK and GCLOCK, 
-simple leave the pinned entry in the clock and continue the search at the next entry.
+simply leave the pinned entry in the clock and continue the search at the next entry.
 
 
 \section{Summary}
@@ -1585,30 +1577,24 @@ write back state, the pinned entries, requires significant adjustments to the ca
 
 The implemented cache replacement policies followed the improvement strategies from the \cref{sec:improved cache replacement policies}.
 The first implemented policy was CLOCK, which was already implemented.
-CLOCK is an LRU approximation which uses a circular linked list, instead of an priority queue as LRU does.
+CLOCK is an LRU approximation which uses a circular linked list, instead of a priority queue as LRU does.
 By using a circularly linked list, CLOCK achieves similar performance to LRU with lower overhead.
 
-The next policy was GCLOCK, which is generalization of CLOCK, and uses a reference counter instead of only a reference bit.
-Thus, GCLOCK can use more history information for the eviction decision.
+The next policy was GCLOCK, which is a generalization of CLOCK, and uses a reference counter instead of only a reference bit.
+Thus, GCLOCK can use more historical information for the eviction decision.
 
 The CLOCK-Pro replacement policy uses the Inter-Reference recency, a measure for the reuse distance, to separate entries into
 hot (low reuse distance) and cold (high reuse distance) entries.
-The hot entries have a high chance to be reused again in near future and should therefore stay in cache and
-the cold entries with low chance to be reused again in near future should be evicted first.
-
-CLOCK-Pro is an example of a cache replacement policy that recognizes access patterns.
-It uses the Inter-Reference recency to distinguish between hot and cold entries and handle these entries differently.
-The last implemented cache replacement policy, ML-CLOCK, is an example for an policy that uses machine learning.
-A model is trained based on the removed entries and the cache hits. 
-This model is then used to find the entry for the eviction.
+The hot entries have a high chance of being reused again in the near future and should therefore stay in the cache.
+The cold entries which have a low chance of being reused again in the near future should be evicted first.
 
 The last implemented policy was ML-CLOCK, which uses a single-layer perceptron to learn from the evicted entries and 
-from the cache hits whether an entry should be evicted or not.
-In contrast to more advanced machine learning algorithm, a single-layer perceptron is easy to implement, no additional libraries are required 
-and has a low runtime overhead.
-Also, unlike the other cache replacement policies, ML-CLOCK attempts not only to minimize cache misses,
+the cache hits whether an entry should be evicted or not.
+In contrast to more advanced machine learning algorithms, a single-layer perceptron is easy to implement, because no additional libraries are required.
+Also, the run time overhead for a single-layer perceptron is low compared to other machine learning algorithms.
+Furthermore, unlike the other cache replacement policies, ML-CLOCK attempts not only to minimize cache misses,
 but also to minimize writes to the underlying storage medium.
-For this reason, ML-CLOCK uses two circular linked list, one for the clean (not modified) 
+For this reason, ML-CLOCK uses two circular linked lists, one for the clean (not modified) 
 and one for the dirty (modified) entries.
 
 \chapter{Evaluation}
@@ -1616,16 +1602,16 @@ and one for the dirty (modified) entries.
 % 25-35%, ca. 10-14 Seiten
 
 In this chapter, we evaluate the implemented cache replacement policies which we described in \cref{cha:design and implementation}.
-First, we will describe the used hardware and software for the performance evaluation.
+First, we will describe the used hardware and software for performance evaluation.
 After that, we explain how the benchmarks for performance evaluation are constructed and why we chose them.
-And lastly, we look at the results of the evaluation which we divided in singled threaded and multi-threaded workloads.
+And lastly, we look at the results of the evaluation which we divided into single threaded and multi threaded workloads.
 
 \section{Setup}
 \label{sec:setup}
 
 The HPC cluster of the Faculty of computer science of the Otto-von-Guericke-University was used for the evaluation.
 The \cref{tab:hardware node} shows the hardware of the used node.
-As secondary storage, we used the home folder which is shared between all nodes and uses CephFS.
+As secondary storage, we used the home folder, which is shared between all nodes and uses CephFS.
 
 \begin{table}[ht]
 	\centering
@@ -1667,7 +1653,7 @@ Furthermore, we benchmark for a single thread and multiple threads performing I/
 We have also considered workloads with more than 50\% write operations.
 However, such workloads that consist of more writes than reads are rather rare. 
 Additionally, the many write operations lead to a strong memory fragmentation, 
-which either crashes the benchmark or forces to perform many synchronizations between fio and haura, 
+which either crashes the benchmark or forces us to perform many synchronizations between fio and haura, 
 resulting in a significant increase of the execution time.
 This caused that we omitted benchmarks with more than 50\% write operations.
 
@@ -1678,7 +1664,7 @@ It is therefore a cache-friendly workload.
 Such an access distribution is common, for example, with web caches and databases.
 
 Next, we have selected the normal distribution.
-The reason for this is that compared to the Zipf distribution, 
+The reason for this is that, compared to the Zipf distribution, 
 the I/O accesses are more evenly distributed and there is a pronounced peak, 
 but it is not as dominant as in the Zipf distribution.
 Therefore, more cache misses may occur and 
@@ -1686,9 +1672,9 @@ the decision to evict is more relevant.
 
 The third distribution is a zoned-distribution which is defined by 
 how many accesses should fall within a range of the file.
-For our case we defined that 60\% of accesses should be in the first 10\%,
-30\% of accesses should be in the next 10\%, 8\% of accesses should be in the next 10\% and
-2\% of accesses should be in the last 10\%.
+For our case, we defined that 60\% of the accesses should be in the first 10\%,
+30\% of he accesses should be in the next 10\%, 8\% of the accesses should be in the next 10\% and
+2\% of the accesses should be in the last 10\%.
 As with the normal distribution, the accesses in the 
 zoned distribution is more dispersed than the zipf distribution.
 
@@ -1699,15 +1685,15 @@ because there is no reason to prefer to keep certain entries in the cache,
 since all entries are equally likely.
 Hence, we use this case to evaluate performance under cache-unfriendly workloads.
 
-\cref{lst:fio jobfile} shows an example of an fio jobfile.
+\cref{lst:fio jobfile} shows an example of a fio jobfile.
 The random distribution (lines 1-3), thread count (line 7) and size of I/O 
 (lines 12-13) vary depending on the benchmark.
-The file size is twice the actual size for I/O because with the use of  copy on write, 
-we have fragmentation and if we chose the file size to low the benchmark run can crash.
+The file size is twice the actual size for I/O because, with the use of  copy on write, 
+we have fragmentation and if we choose the file size to low the benchmark run can crash.
 The same random seed is used for each benchmark run (lines 5-6) and the block size 
 for the I/O operations is 1MiB (line 9).
 The fsync parameter (line 14) defines that after 131072 writes fio will synchronize the  
-data, so that all data that is currently copied for write will be actually written back.
+data, so that all data that is currently copied for write will actually be written back.
 This is required to reduce fragmentation.
 
 \bigskip
@@ -1733,7 +1719,7 @@ In \ref{lst:configuration haura}, we show the configuration file for Haure.
 The cache size has been set at 1GiB, which is relatively small to better 
 represent the performance of the different cache replacement policies.
 If we set the cache capacity higher, the hit rate would be 100\% 
-in most cases or we would have to use very large I/O sizes to actually be able to detect differences.
+in most cases, or we would have to use very large I/O sizes to actually be able to detect differences.
 
 
 \newpage
@@ -1741,11 +1727,11 @@ in most cases or we would have to use very large I/O sizes to actually be able t
 \subsection{Random read only Benchmark}
 
 The \cref{fig:single 100p read} shows the benchmark for random read only workload for the different random distributions.
-For this case the hit rate for CLOCK and GCLOCK is nearly identical and both perform the best for all random distributions and file sizes. 
-CLOCK-Pro on the other has the lowest hit rate in all cases.
+For this case, the hit rate for CLOCK and GCLOCK is nearly identical and both perform the best for all random distributions and file sizes. 
+CLOCK-Pro on the other hand, has the lowest hit rate in all cases.
 One possible reason for the weaker performance of CLOCK-Pro could be that we had to modify CLOCK-Pro for Haura.
 As described in \ref{sub:clock-pro}, non-resident cold entries are not turned into resident hot entries.
-Since the hot entries in particular are supposed to prevent the additional cache misses, 
+Since the hot entries in particular are supposed to prevent additional cache misses, 
 this could have a negative effect on the performance in this benchmark.
 We also notice that the hit rate of ML-CLOCK decreases slightly with increasing file size.
 This could mean that the accuracy of SLP in ML-CLOCK may decrease for certain workloads.
@@ -1786,21 +1772,21 @@ This could mean that the accuracy of SLP in ML-CLOCK may decrease for certain wo
 The next benchmark is for random 90\% read and 10\% write operations
 and is shown in \cref{fig:single 90p read}.
 In contrast to the read-only case, we have a significantly different result.
-Partly, this is because write operation means that entries are copied for the write and thus are in the modified state and pinned
+Partly, this is because with increased write operations more entries are copied for the write and thus are in the modified state and pinned
 which leads to the decreasing hit rate for larger file sizes.
 
-Also, we configured fio to perform synchronization operation after 131072 I/O operations and during this 
-synchronization all cache entries are deleted.
+Also, we configured fio to perform synchronization operations after 131072 I/O operations and during this 
+synchronization, all cache entries are deleted.
 This is necessary because we have already seen in the DML cycle that all objects that are in the status 
 modified or write back are in the cache.
-So the changes are applied to the data in cache not to the actual data on disk.
-To update all data on disk each cache entry is dropped and if the cache entry was in modified or write back state,
+So the changes are applied to the data in the cache, not to the actual data on disk.
+To update all data on disk, each cache entry is dropped and if the cache entry was in modified or write back state,
 the changes are applied to the original data on disk.
 To ensure data consistency.
 Therefore, the cache must be refilled after each synchronization and each newly inserted entry does not count as a cache miss.
 This leads to a hit rate of 100\% for small file sizes.
-With increasing file size ML-CLOCK outperforms the other cache replacement policies for all random distributions.
-It can be assumed that ML-CLOCK has no problems to adapt to the underlying access distribution for this mixed workload 
+With increasing file size, ML-CLOCK outperforms the other cache replacement policies for all random distributions.
+It can be assumed that ML-CLOCK has no problems with adapting to the underlying access distribution for this mixed workload 
 even for different random distributions.
 The performances of CLOCK, GCLOCK and CLOCK-Pro are almost equal across all distributions and file sizes.
 
@@ -1882,7 +1868,7 @@ CLOCK, GCLOCK and CLOCK-Pro again show almost equal performance.
 show the results for the read only benchmark for the different random distributions at various thread counts.
 The results have some commonalities with the single-threaded read-only benchmark.
 As in the single threaded case, CLOCK and GCLOCK have a nearly equal hit rate and outperform the other two cache policies.
-Also CLOCK-Pro has the worst performance across all distributions, file sizes and thread counts.
+Also, CLOCK-Pro has the worst performance across all distributions, file sizes and thread counts.
 This can likely be explained by the same reason as for the single threaded benchmark.
 The change we had to make to CLOCK-Pro so that we could implement it in Haura.
 
@@ -2015,11 +2001,11 @@ are not as clear as in the read only benchmark.
 There is no policy that clearly outperforms the other.
 
 ML-CLOCK has a good performance for low thread counts and for zipf- and normal-distribution.
-But for 16 threads and uniform distribution ML-CLOCK shows significantly worse performance than the other policies.
+But for 16 threads and uniform distribution, ML-CLOCK shows significantly worse performance than the other policies.
 CLOCK-Pro, which was outperformed in the single-thread benchmarks, 
 performed best in some cases, specifically \cref{fig:rw_90to10 128 zoned} for 4 threads.
-Which suggests that the fact that CLOCK-Pro cannot convert non-resident cold entries into resident hot entries
-the change we had to make to our CLOCK-Pro implementation does not significantly affect the performance here.
+Which suggests that the fact that CLOCK-Pro cannot convert non-resident cold entries into resident hot entries,
+the change we had to make to our CLOCK-Pro implementation, does not significantly affect the performance here.
 Also, CLOCK and GCLOCK, which had previously shown similar performance, 
 now differ in normal- and zoned-distribution benchmark.
 
@@ -2152,26 +2138,26 @@ Here the increased number of write operations again leads to lower hit rates,
 as in the corresponding single threaded benchmark.
 CLOCK-Pro again shows better  performance for this workload compared to single threaded or 
 the multi threaded read only benchmark.
-This further supports the thesis that in multi mixed multi threaded workloads our 
+This further supports the theory that in mixed multi threaded workloads our 
 change to CLOCK-Pro is not significant.
-In particular, CLOCK-Pro performs best with 64 GB and 128 GB 
+In particular, CLOCK-Pro performs best at 64 GB and 128 GB 
 file sizes and 8 to 16 threads.
-ML-CLOCK, on the other hand, has shows mixed performance.
-With zipf-distribution and low thread count, the performance is good.
+ML-CLOCK, on the other hand, has shown a mixed performance.
+With zipf distribution and low thread count, the performance is good.
 However, with a higher thread count and file sizes, the performance of ML-CLOCK 
 is usually worse than that of the other cache replacement strategies.
 A possible explanation for this could be that ML-CLOCK has difficulty learning the 
 underlying access pattern for a higher number of threads and 
 therefore performs worse than the other cache replacement policies in such workloads.
-Furthermore, the performance of CLOCK and GCLOCK, with the exception of uniform-distribution, 
+Furthermore, the performance of CLOCK and GCLOCK, with the exception of uniform distribution, 
 is more distinct from each other.
 
 What also stands out for this specific benchmark, with equal ratio of read and write operation \cref{fig:multi uniform rw_50to50}, 
-is that for the uniform random distribution the hit rate increases with larger thread count.
-This is unexpected since for all other benchmarks the uniform distribution hit rate for all cache replacement 
+is that for the uniform random distribution, the hit rate increases with a larger thread count.
+This is unexpected, since for all other benchmarks the uniform distribution hit rate for all cache replacement 
 polices remains about the same regardless of thread count and file size, 
 with the exception of ML-CLOCK for high thread count.
-This suggests that the combination of increased thread count and proportion of write operations 
+This suggests that the combination of increased thread count and the proportion of write operations 
 improves the hit rate for random uniform distribution.
 
 \begin{figure}[H]
@@ -2304,10 +2290,10 @@ Four different random distributions were used to simulate different I/O behavior
 First, the zipf-distribution as a cache friendly workload that often occurs in web caches and databases.
 Then the normal- and zoned-distribution, which have a larger dispersion than the zipf-distribution.
 And last, we used the uniform distribution, which is a cache unfriendly workload since each entry
-has the same accesses probability.
+has the same access probability.
 Furthermore, we evaluated these cases for different thread counts performing I/O.
 
-In the single threaded benchmarks, ML-CLOCK outperform the other policies for the mixed workloads.
+In the single threaded benchmarks, ML-CLOCK outperforms the other policies for mixed read write workloads.
 However, CLOCK and GCLOCK performed the best for the read-only workload.
 CLOCK-Pro, on the contrary, performed worse in the read only workloads 
 but showed comparable performance to CLOCK and GCLOCK in the mixed workloads.
@@ -2317,26 +2303,26 @@ In read only workloads, CLOCK and GCLOCK perform best and CLOCK performs worst, 
 For the mixed workloads, there is no cache replacement policy that outperforms the other.
 CLOCK-Pro, for example, has good performance at high thread counts and file sizes, but in a few cases has significantly 
 under performance at lower thread counts.
-Also the performance of CLOCK and GCLOCK, which was almost the same in the single-thread and 
+Also, the performance of CLOCK and GCLOCK, which was almost the same in the single-thread and 
 multi-thread read-only benchmark, shows significant 
 differences in the mixed multi-thread benchmark.
 
 ML-CLOCK, which showed the best performance for mixed single threaded benchmarks, has 
 significantly lower performance for high thread counts and file sizes.
-Which could indicate that ML-CLOCK has problems to recognize the I/O access 
+Which could indicate that ML-CLOCK has problems with recognize the I/O access 
 pattern for higher thread counts and file sizes.
 Another possible cause could be how the ghost queue is managed.
-Whether a learn operation is triggered depends on if the ghost queue has already reached maximum size and 
-therefore entries have to be removed when a cache entry will be evicted from the cache which are then used for learning.
+Whether a learning operation is triggered depends on if the ghost queue has already reached maximum size and 
+therefore entries have to be removed when a cache entry is evicted from the cache which is then used for learning.
 The maximum size of the ghost queue depends on how many cache entries are in the cache.
-So if a synchronization is performed and the cache is cleared,
+So, if a synchronization is performed and the cache is cleared,
 no entries are removed from the ghost queue for the time being.
 Only after the cache is refilled and an eviction is performed, thus adding an entry to the ghost queue, 
 the size of the ghost queue is checked.
-Since this is felt by the entries before the synchronization, a large quantity of learning operation 
-are triggered at one blow until the size of the ghost queue is again smaller equal to the size of the cache.
+Since the ghost queue is filled by the entries before the synchronization, a large number of learning operations 
+is triggered at once until the size of the ghost queue is again smaller or equal to the size of the cache.
 This is not a problem for the single threaded benchmark, since there is also only one random distribution for the one thread.
-But for the multi threaded benchmarks each thread has its own file to which the random 
+But for the multi threaded benchmarks, each thread has its own file to which the random 
 distribution is applied, so the access pattern is more complex.
 With the triggering of a batch of learning operations at the same time, the SLP may tend to overfitting 
 which is disadvantageous when the access patterns are more complex, as in the case of multi-threaded benchmarks.
@@ -2344,15 +2330,16 @@ which is disadvantageous when the access patterns are more complex, as in the ca
 The weaker performance of CLOCK-Pro in the read-only benchmarks, both single and multi-threaded, 
 can likely be attributed to our changes to CLOCK-Pro for Haura.
 The change was that non-resident cold entries cannot be converted to resident hot entries.
-This change is likely to be more noticeable in read only worklaods, as in this case there is no synchronization
+This change is likely to be more noticeable in read only workloads, as in this case there is no synchronization
 which clears the cache.
+\todo[inline]{hier fehlt noch was}
 
 As a result, it can be said that for all implemented cache replacement policies and 
 single threaded use cases ML-CLOCK should be used.
 CLOCK and GCLOCK have better performance for read only workloads but read only 
 workloads are rather the exception for real applications.
 
-For multi-threaded use cases it is more difficult to make a recommendation, 
+For multi-threaded use cases, it is more difficult to make a recommendation, 
 as the performance of the implemented policies was also mixed and there is no clearly better policy.
 One possibility could be to use ML-CLOCK for small thread count, about 4 threads, but switch to CLOCK-Pro 
 for higher thread count.
