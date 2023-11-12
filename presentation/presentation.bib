@@ -1,22 +1,413 @@
-@article{DBLP:journals/superfri/DuweLMSF0B020,
-  author    = {Kira Duwe and
-               Jakob L{\"{u}}ttgau and
-               Georgiana Mania and
-               Jannek Squar and
-               Anna Fuchs and
-               Michael Kuhn and
-               Eugen Betke and
-               Thomas Ludwig},
-  title     = {{State of the Art and Future Trends in Data Reduction for High-Performance
-               Computing}},
-  journal   = {Supercomput. Front. Innov.},
-  volume    = {7},
-  number    = {1},
-  pages     = {4--36},
-  year      = {2020},
-  url       = {https://doi.org/10.14529/jsfi200101},
-  doi       = {10.14529/jsfi200101},
-  timestamp = {Fri, 11 Dec 2020 15:05:19 +0100},
-  biburl    = {https://dblp.org/rec/journals/superfri/DuweLMSF0B020.bib},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
+@INPROCEEDINGS{7569243,
+  author={Kumar, Swadhesh and Singh, P K},
+  booktitle={2016 IEEE International Conference on Engineering and Technology (ICETECH)}, 
+  title={An overview of modern cache memory and performance analysis of replacement policies}, 
+  year={2016},
+  volume={},
+  number={},
+  pages={210-214},
+  doi={10.1109/ICETECH.2016.7569243}
+}
+
+@inproceedings{jiang2005clock,
+  title={{CLOCK-Pro}: An Effective Improvement of the {CLOCK} Replacement.},
+  author={Jiang, Song and Chen, Feng and Zhang, Xiaodong},
+  booktitle={USENIX Annual Technical Conference, General Track},
+  pages={323--336},
+  year={2005}
+}
+
+@article{jiang2005making,
+  title={Making {LRU} friendly to weak locality workloads: A novel replacement algorithm to improve buffer cache performance},
+  author={Jiang, Song and Zhang, Xiaodong},
+  journal={IEEE Transactions on Computers},
+  volume={54},
+  number={8},
+  pages={939--952},
+  year={2005},
+  publisher={IEEE}
+}
+
+@article{10.1145/511399.511340,
+author = {Jiang, Song and Zhang, Xiaodong},
+title = {LIRS: An Efficient Low Inter-Reference Recency Set Replacement Policy to Improve Buffer Cache Performance},
+year = {2002},
+issue_date = {June 2002},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {30},
+number = {1},
+issn = {0163-5999},
+url = {https://doi.org/10.1145/511399.511340},
+doi = {10.1145/511399.511340},
+abstract = {Although LRU replacement policy has been commonly used in the buffer cache management, it is well known for its inability to cope with access patterns with weak locality. Previous work, such as LRU-K and 2Q, attempts to enhance LRU capacity by making use of additional history information of previous block references other than only the recency information used in LRU. These algorithms greatly increase complexity and/or can not consistently provide performance improvement. Many recently proposed policies, such as UBM and SEQ, improve replacement performance by exploiting access regularities in references. They only address LRU problems on certain specific and well-defined cases such as access patterns like sequences and loops. Motivated by the limits of previous studies, we propose an efficient buffer cache replacement policy, called Low Inter-reference Recency Set (LIRS). LIRS effectively addresses the limits of LRU by using recency to evaluate Inter-Reference Recency (IRR) for making a replacement decision. This is in contrast to what LRU does: directly using recency to predict next reference timing. At the same time, LIRS almost retains the same simple assumption of LRU to predict future access behavior of blocks. Our objectives are to effectively address the limits of LRU for a general purpose, to retain the low overhead merit of LRU, and to outperform those replacement policies relying on the access regularity detections. Conducting simulations with a variety of traces and a wide range of cache sizes, we show that LIRS significantly outperforms LRU, and outperforms other existing replacement algorithms in most cases. Furthermore, we show that the additional cost for implementing LIRS is trivial in comparison with LRU.},
+journal = {SIGMETRICS Perform. Eval. Rev.},
+month = {jun},
+pages = {31–42},
+numpages = {12}
+}
+
+@article{corbato1968paging,
+  title={A paging experiment with the multics system},
+  author={Corbato, Fernando J and others},
+  year={1968},
+  publisher={Massachusetts Institute of Technology}
+} 
+
+@article{smith1978sequentiality,
+  title={Sequentiality and prefetching in database systems},
+  author={Smith, Alan Jay},
+  journal={ACM Transactions on Database Systems (TODS)},
+  volume={3},
+  number={3},
+  pages={223--247},
+  year={1978},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{cho2021ml,
+  title={{ML-CLOCK}: Efficient page cache algorithm based on perceptron-based neural network},
+  author={Cho, Minseon and Kang, Donghyun},
+  journal={Electronics},
+  volume={10},
+  number={20},
+  pages={2503},
+  year={2021},
+  publisher={MDPI}
+}
+
+@article{bender2015introduction,
+  title={An introduction to B-trees and write-optimization},
+  author={Bender, Michael A and Farach-Colton, Martin and Jannen, William and Johnson, Rob and Kuszmaul, Bradley C and Porter, Donald E and Yuan, Jun and Zhan, Yang},
+  journal={login; magazine},
+  volume={40},
+  number={5},
+  year={2015}
+}
+
+@inproceedings{brodal2003lower,
+  title={Lower bounds for external memory dictionaries.},
+  author={Brodal, Gerth St{\o}lting and Fagerberg, Rolf},
+  booktitle={SODA},
+  volume={3},
+  pages={546--554},
+  year={2003}
+}
+
+@misc{wiedemann2018modern,
+  title={Modern Storage Stack with Key-Value Store Interface and Snapshots Based on Copy-On-Write B $\varepsilon$-Trees},
+  author={Wiedemann, Felix},
+  year={2018},
+  publisher={Master's thesis. University of Hamburg}
+}
+
+@article{hoppner2021design,
+  title={Design and Implementation of an Object Store with Tiered Storage},
+  author={H{\"o}ppner, Till},
+  journal={Cited on},
+  pages={15},
+  year={2021}
+}
+
+@article{van1992lru,
+  title={{LRU} is better than {FIFO} under the independent reference model},
+  author={Van Den Berg, J and Gandolfi, A},
+  journal={Journal of applied probability},
+  volume={29},
+  number={1},
+  pages={239--243},
+  year={1992},
+  publisher={Cambridge University Press}
+}
+
+@inproceedings{cao1994application,
+  title={Application-Controlled File Caching Policies.},
+  author={Cao, Pei and Felten, Edward W and Li, Kai},
+  booktitle={USENIX Summer},
+  pages={171--182},
+  year={1994}
+}
+
+@inproceedings{patterson1995informed,
+  title={Informed prefetching and caching},
+  author={Patterson, R Hugo and Gibson, Garth A and Ginting, Eka and Stodolsky, Daniel and Zelenka, Jim},
+  booktitle={Proceedings of the fifteenth ACM symposium on Operating systems principles},
+  pages={79--95},
+  year={1995}
+}
+
+@article{o1993lru,
+  title={The {LRU-K} page replacement algorithm for database disk buffering},
+  author={O'neil, Elizabeth J and O'neil, Patrick E and Weikum, Gerhard},
+  journal={Acm Sigmod Record},
+  volume={22},
+  number={2},
+  pages={297--306},
+  year={1993},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{lee2001lrfu,
+  title={{LRFU}: A spectrum of policies that subsumes the least recently used and least frequently used policies},
+  author={Lee, Donghee and Choi, Jongmoo and Kim, Jong-Hun and Noh, Sam H and Min, Sang Lyul and Cho, Yookun and Kim, Chong Sang},
+  journal={IEEE transactions on Computers},
+  volume={50},
+  number={12},
+  pages={1352--1361},
+  year={2001},
+  publisher={IEEE Computer Society}
+}
+
+@inproceedings{shasha19942q,
+  title={2q: A low overhead high performance buffer management replacement algoritm},
+  author={Shasha, D and Johnson, T},
+  booktitle={Proc. 20th Int. Conf. Very Large Databases},
+  pages={439--450},
+  year={1994}
+}
+
+@inproceedings {270366,
+author = {Nimrod Megiddo and Dharmendra S. Modha},
+title = {{ARC}: A {Self-Tuning}, Low Overhead Replacement Cache},
+booktitle = {2nd USENIX Conference on File and Storage Technologies (FAST 03)},
+year = {2003},
+address = {San Francisco, CA},
+url = {https://www.usenix.org/conference/fast-03/arc-self-tuning-low-overhead-replacement-cache},
+publisher = {USENIX Association},
+month = mar,
+}
+
+@article{megiddo2004outperforming,
+  title={Outperforming LRU with an adaptive replacement cache algorithm},
+  author={Megiddo, Nimrod and Modha, Dharmendra S},
+  journal={Computer},
+  volume={37},
+  number={4},
+  pages={58--65},
+  year={2004},
+  publisher={IEEE}
+}
+
+@article{akbari2020page,
+  title={A page replacement algorithm based on a fuzzy approach to improve cache memory performance},
+  author={Akbari Bengar, Davood and Ebrahimnejad, Ali and Motameni, Homayun and Golsorkhtabaramiri, Mehdi},
+  journal={Soft Computing},
+  volume={24},
+  number={2},
+  pages={955--963},
+  year={2020},
+  publisher={Springer}
+}
+
+@inproceedings{kim2022lpr,
+  title={{LPR}: learning-based page replacement scheme for scientific applications},
+  author={Kim, Hwajung and Yeom, Heon Y},
+  booktitle={Proceedings of the 23rd International Middleware Conference Industrial Track},
+  pages={36--42},
+  year={2022}
+}
+
+@inproceedings{yang2023fifo,
+  title={{FIFO} can be Better than {LRU}: the Power of Lazy Promotion and Quick Demotion},
+  author={Yang, Juncheng and Qiu, Ziyue and Zhang, Yazhuo and Yue, Yao and Rashmi, KV},
+  booktitle={Proceedings of the 19th Workshop on Hot Topics in Operating Systems},
+  pages={70--79},
+  year={2023}
+}
+
+@inproceedings{eytan2020s,
+  title={It's Time to Revisit {LRU} vs. {FIFO}},
+  author={Eytan, Ohad and Harnik, Danny and Ofer, Effi and Friedman, Roy and Kat, Ronen},
+  booktitle={12th USENIX Workshop on Hot Topics in Storage and File Systems (HotStorage 20)},
+  year={2020}
+}
+
+@inproceedings{qiu2023frozenhot,
+  title={{FrozenHot} Cache: Rethinking Cache Management for Modern Hardware},
+  author={Qiu, Ziyue and Yang, Juncheng and Zhang, Juncheng and Li, Cheng and Ma, Xiaosong and Chen, Qi and Yang, Mao and Xu, Yinlong},
+  booktitle={Proceedings of the Eighteenth European Conference on Computer Systems},
+  pages={557--573},
+  year={2023}
+}
+
+@article{10.1145/363011.363155,
+    author = {Belady, L. A. and Nelson, R. A. and Shedler, G. S.},
+    title = {An Anomaly in Space-Time Characteristics of Certain Programs Running in a Paging Machine},
+    year = {1969},
+    issue_date = {June 1969},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    volume = {12},
+    number = {6},
+    issn = {0001-0782},
+    url = {https://doi.org/10.1145/363011.363155},
+    doi = {10.1145/363011.363155},
+    abstract = {The running time of programs in a paging machine generally increases as the store in which programs are constrained to run decreases. Experiment, however, have revealed cases in which the reverse is true: a decrease in the size of the store is accompanied by a decrease in running time.An informal discussion of the anomalous behavior is given, and for the case of the FIFO replacement algorithm a formal treatment is presented.},
+    journal = {Commun. ACM},
+    month = {jun},
+    pages = {349–353},
+    numpages = {5},
+    keywords = {replacement algorithm, demand paging, paging machines}
+}
+
+@article{karakostas2000practical,
+  title={Practical {LFU} implementation for web caching},
+  author={Karakostas, George and Serpanos, D},
+  journal={Technical Report TR-622-00},
+  year={2000}
+}
+
+@article{einziger2017tinylfu,
+  title={Tinylfu: A highly efficient cache admission policy},
+  author={Einziger, Gil and Friedman, Roy and Manes, Ben},
+  journal={ACM Transactions on Storage (ToS)},
+  volume={13},
+  number={4},
+  pages={1--31},
+  year={2017},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{cpu-mem-gap,
+author = {Efnusheva, Danijela and Cholakoska, Ana and Tentov, Aristotel},
+year = {2017},
+month = {04},
+pages = {151},
+title = {A Survey of Different Approaches for Overcoming the Processor - Memory Bottleneck},
+volume = {9},
+journal = {International Journal of Information Technology and Computer Science},
+doi = {10.5121/ijcsit.2017.9214}
+}
+
+@article{wulf1995hitting,
+  title={Hitting the memory wall: Implications of the obvious},
+  author={Wulf, Wm A and McKee, Sally A},
+  journal={ACM SIGARCH computer architecture news},
+  volume={23},
+  number={1},
+  pages={20--24},
+  year={1995},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{belady1966study,
+  title={A study of replacement algorithms for a virtual-storage computer},
+  author={Belady, Laszlo A.},
+  journal={IBM Systems journal},
+  volume={5},
+  number={2},
+  pages={78--101},
+  year={1966},
+  publisher={IBM}
+}
+
+@article{denning1980working,
+  title={Working sets past and present},
+  author={Denning, Peter J.},
+  journal={IEEE Transactions on Software engineering},
+  number={1},
+  pages={64--84},
+  year={1980},
+  publisher={IEEE}
+}
+
+@misc{wunsche2022data,
+  title={Data Migration Policies in a Copy-on-Write Tiered Storage Stack-Conception and Implementation},
+  author={W{\"u}nsche, Johannes},
+  year={2022},
+  school={Master's thesis, Otto-von Universit{\"a}t Magdeburg, Magdeburg, Germany, 2022. https~…}
+}
+
+@inproceedings{breslau1999web,
+  title={Web caching and Zipf-like distributions: Evidence and implications},
+  author={Breslau, Lee and Cao, Pei and Fan, Li and Phillips, Graham and Shenker, Scott},
+  booktitle={IEEE INFOCOM'99. Conference on Computer Communications. Proceedings. Eighteenth Annual Joint Conference of the IEEE Computer and Communications Societies. The Future is Now (Cat. No. 99CH36320)},
+  volume={1},
+  pages={126--134},
+  year={1999},
+  organization={IEEE}
+}
+
+@article{mahanti2000traffic,
+  title={Traffic analysis of a web proxy caching hierarchy},
+  author={Mahanti, Anirban and Williamson, Carey and Eager, Derek},
+  journal={IEEE Network},
+  volume={14},
+  number={3},
+  pages={16--23},
+  year={2000},
+  publisher={IEEE}
+}
+
+@article{choi2022learning,
+  title={Learning future reference patterns for efficient cache replacement decisions},
+  author={Choi, Hyejeong and Park, Sejin},
+  journal={IEEE Access},
+  volume={10},
+  pages={25922--25934},
+  year={2022},
+  publisher={IEEE}
+}
+
+@misc{peterson2002data,
+  title={Data placement for copy-on-write using virtual contiguity},
+  author={Peterson, Zachary Nathaniel Joseph},
+  year={2002},
+  school={Master's thesis, University of California, Santa Cruz 2002.}
+}
+
+@article{lugar2001hierarchical,
+  title={Hierarchical storage management: leveraging new capabilities},
+  author={Lugar, Julie},
+  journal={IT Professional},
+  volume={3},
+  number={2},
+  pages={53--55},
+  year={2001},
+  publisher={IEEE}
+}
+
+@inproceedings{rodriguez2021learning,
+  title={Learning cache replacement with $\{$CACHEUS$\}$},
+  author={Rodriguez, Liana V and Yusuf, Farzana and Lyons, Steven and Paz, Eysler and Rangaswami, Raju and Liu, Jason and Zhao, Ming and Narasimhan, Giri},
+  booktitle={19th USENIX Conference on File and Storage Technologies (FAST 21)},
+  pages={341--354},
+  year={2021}
+}
+
+@misc{wikiMemoryHierarchy,
+   author = {Danlash},
+   title = {{SVG Graphic illustrating Memory hierarchy}},
+   year = {2022},
+   howpublished = {\url{https://commons.wikimedia.org/w/index.php?title=File:ComputerMemoryHierarchy.svg&oldid=686137092}.
+                     License: public domain},
+   note = "[Online; accessed 16-October-2023]"
+}
+
+@article{ha2022ccow,
+  title={CCoW: Optimizing Copy-on-Write Considering the Spatial Locality in Workloads},
+  author={Ha, Minjong and Kim, Sang-Hoon},
+  journal={Electronics},
+  volume={11},
+  number={3},
+  pages={461},
+  year={2022},
+  publisher={MDPI}
+}
+
+@misc{hauraDocu,
+   author = {Johannes Wünsche},
+   title = {{Documentation Haura}},
+   year = {2022},
+   howpublished = {\url{https://github.com/julea-io/haura/tree/main/docs}},
+   note = "[Online; accessed 16-October-2023]"
+}
+
+@inproceedings{kuhn2017julea,
+  title={JULEA: A flexible storage framework for HPC},
+  author={Kuhn, Michael},
+  booktitle={High Performance Computing: ISC High Performance 2017 International Workshops, DRBSD, ExaComm, HCPM, HPC-IODC, IWOPH, IXPUG, P\^{} 3MA, VHPC, Visualization at Scale, WOPSSS, Frankfurt, Germany, June 18-22, 2017, Revised Selected Papers 32},
+  pages={712--723},
+  year={2017},
+  organization={Springer}
 }
