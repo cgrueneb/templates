@@ -146,7 +146,7 @@ Otto von Guericke University Magdeburg
 			\item Use of a policy  
 		\end{itemize}		 
 		\item But Tiered Storage actually move data
-		\item Caching works with copies and can use cache lines
+		\item Caching works with copies 
 		\item Can be used together
 	\end{itemize}
 \end{frame}
@@ -195,8 +195,8 @@ Otto von Guericke University Magdeburg
 			\begin{itemize}
 				\item Hierarchical storage stack
 				\item Key-value and object interface
-				\item Designed for research
 				\item Structured in layers
+				\item Designed for research
 				\item Used directly or through wrapper
 			\end{itemize}
 		\end{column}
@@ -244,7 +244,7 @@ Otto von Guericke University Magdeburg
 		\item Explicit user-level hints
     	\item Using deeper history information
     	\item Detection of access patterns
-    	\item Using ml-techniques
+    	\item Using ML-techniques
 	\end{itemize}
 	\end{itemize}
 \end{frame}
@@ -253,7 +253,7 @@ Otto von Guericke University Magdeburg
 \label{sec:design}
 
 \begin{frame}
-	\navframetitle{Overview}
+	\navframetitle{DMU and DML State Cycle}
 
 	\begin{columns}
 		\begin{column}{0.5\textwidth}
@@ -261,8 +261,6 @@ Otto von Guericke University Magdeburg
 				\item DMU and DML state cycle influences the implementation
 				\item Pinned entries 
 				\item Variable sized cache entries	
-				\item Selected policies follow the strategies for improved policies
-				\item All clock-based due to better scalability and low overhead
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.5\textwidth}
@@ -277,86 +275,102 @@ Otto von Guericke University Magdeburg
 \end{frame}
 
 \begin{frame}
-	\navframetitle{CLOCK}
+	\navframetitle{Implemented Cache Replacement Policies}
 
-	\begin{columns}
-		\begin{column}{0.5\textwidth}
-			\begin{itemize}
-				\item Introduced in \cite{corbato1968paging}				
-				\item LRU approximation
-				\item Was already implemented
-				\item Uses a circular linked list and a "hand" pointer
-				\item One reference bit per entry
-				\item Pinned entries will be skipped
-			\end{itemize}
-		\end{column}
-		\begin{column}{0.5\textwidth}
-			\begin{figure}[ht]
-    			\centering
-    			\includegraphics[scale=0.2]{clock.jpg}
-    			\caption{Example for circular list in CLOCK.}
-        		\label{fig:circular list for CLOCK}
-			\end{figure}			
-		\end{column}
-	\end{columns}
-\end{frame}
-
-\begin{frame}
-	\navframetitle{GCLOCK}
-	
 	\begin{itemize}
-		\item Introduced in \cite{smith1978sequentiality}				
-		\item Generalization of CLOCK 
-		\item Uses more historical information
-		\item Uses a circular linked list and a "hand" pointer
-		\item Reference counter instead of reference bit, $k = 2$
-		\item Pinned entries will be skipped
-	\end{itemize}	
+		\item All clock-based due to better scalability and low overhead
+		\item Selected policies follow the strategies for improved policies:
+		\begin{itemize}
+			\item CLOCK -> explicit user-level hints
+    		\item GCLOCK -> using deeper history information
+    		\item CLOCK-Pro -> detection of access patterns
+    		\item ML-CLOCK ->using ML-techniques
+	\end{itemize}
+		
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
-	\navframetitle{CLOCK-PRO}
-
-	\begin{columns}
-		\begin{column}{0.5\textwidth}
-			\begin{itemize}
-				\item Introduced in \cite{jiang2005clock}			
-				\item Combines LIRS with CLOCK
-				\item Detect access patterns
-				\item Categorize entries in hot and cold
-				\item Uses non-resident (ghost) entries
-				\item Modified eviction, pinned entries reinsert
-				\item Non-resident cold entries not changed to hot entries due to DMU!
-			\end{itemize}
-		\end{column}
-		\begin{column}{0.5\textwidth}
-			\begin{figure}[ht]
-    			\centering
-    			\includegraphics[scale=0.1]{clock_pro.png}
-    			\caption{Example of the circular list for CLOCK-Pro. Hot entries marked with "H", cold entries with "C" and non-resident cold entries are shadowed.
-    The "$\sqrt{}$" marks referenced entries.}
-        		\label{fig:clock in clock-pro}
-			\end{figure}			
-		\end{column}
-	\end{columns}
-\end{frame}
-
-\begin{frame}
-	\navframetitle{ML-CLOCK}
-
-\begin{itemize}
-	\item Introduced in \cite{cho2021ml}	
-	\item ML-learning technique
-	\item Uses single-layer perceptron
-	\item Uses frequency and recency information
-	\item 2 clocks used clean and dirty
-	\item Ghost queue for learning 
-	\item Tries to minimize write operations
-	\item Pinned entries skipped
-	\item Modification no ghost entry reinsert to clock
-\end{itemize}	
-\end{frame}
-
+%\begin{frame}
+%	\navframetitle{CLOCK}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{itemize}
+%				\item Introduced in \cite{corbato1968paging}				
+%				\item LRU approximation
+%				\item Was already implemented
+%				\item Uses a circular linked list and a "hand" pointer
+%				\item One reference bit per entry
+%				\item Pinned entries will be skipped
+%			\end{itemize}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[scale=0.2]{clock.jpg}
+%    			\caption{Example for circular list in CLOCK.}
+%        		\label{fig:circular list for CLOCK}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%
+%\begin{frame}
+%	\navframetitle{GCLOCK}
+%	
+%	\begin{itemize}
+%		\item Introduced in \cite{smith1978sequentiality}				
+%		\item Generalization of CLOCK 
+%		\item Uses more historical information
+%		\item Uses a circular linked list and a "hand" pointer
+%		\item Reference counter instead of reference bit, $k = 2$
+%		\item Pinned entries will be skipped
+%	\end{itemize}	
+%\end{frame}
+%
+%\begin{frame}
+%	\navframetitle{CLOCK-PRO}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{itemize}
+%				\item Introduced in \cite{jiang2005clock}			
+%				\item Combines LIRS with CLOCK
+%				\item Detect access patterns
+%				\item Categorize entries in hot and cold
+%				\item Uses non-resident (ghost) entries
+%				\item Modified eviction, pinned entries reinsert
+%				\item Non-resident cold entries not changed to hot entries due to DMU!
+%			\end{itemize}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[scale=0.1]{clock_pro.png}
+%    			\caption{Example of the circular list for CLOCK-Pro. Hot entries marked with "H", cold entries with "C" and non-resident cold entries are shadowed.
+%    The "$\sqrt{}$" marks referenced entries.}
+%        		\label{fig:clock in clock-pro}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%
+%\begin{frame}
+%	\navframetitle{ML-CLOCK}
+%
+%\begin{itemize}
+%	\item Introduced in \cite{cho2021ml}	
+%	\item ML-learning technique
+%	\item Uses single-layer perceptron
+%	\item Uses frequency and recency information
+%	\item 2 clocks used clean and dirty
+%	\item Ghost queue for learning 
+%	\item Tries to minimize write operations
+%	\item Pinned entries skipped
+%	\item Modification no ghost entry reinsert to clock
+%\end{itemize}	
+%\end{frame}
+%
 \section{Evaluation}
 \label{sec:evaluation}
 
@@ -373,39 +387,224 @@ Otto von Guericke University Magdeburg
  	\end{itemize}
 \end{frame}
 
+%---------------------------------------------------------------------
+% old benchmark slides
+%
+%\begin{frame}[fragile]
+%	\navframetitle{Single Threaded Benchmarks}
+%	
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{itemize}
+%				\item Read-only benchmarks CLOCK and GCLOCK highest performance
+%				\item Read-only CLOCK-Pro shows worst performance
+%				\item Mixed benchmarks ML-Clock best performance
+%				\item CLOCK, GCLOCK and CLOCK-Pro nearly equal performance
+%				\item Increased write operations leads to lower hit rate
+%			\end{itemize}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{randread_zipf.jpg}
+%        		\caption{Read-only, zipf-distribution}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%
+%\begin{frame}[fragile]
+%	\navframetitle{Single Threaded Benchmarks}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}
+%				\includegraphics[width=\textwidth]{rw_90to10_zoned.jpg}
+%        		\caption{Mixed, 90\% reads, zoned-distribution}
+%        		\label{fig:single rw_90to10  zoned}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{rw_50to50_normal.jpg}
+%        		\caption{Mixed, 50\% reads, normal-distribution}
+%        		\label{fig:single rw_90to10  normal}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{itemize}
+%				\item Result not as clear as single threaded benchmarks
+%				\item Read-only benchmarks CLOCK and GCLOCK highest performance
+%				\item Read-only CLOCK-Pro worst performance
+%				\item Mixed no clear best policy
+%				\item Mixed ML-CLOCK good performance for lower thread count
+%				\item Mixed CLOCK-Pro better performance for higher thread count
+%			\end{itemize}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_128_gb_randread_normal.jpg}
+%        		\caption{Read-only, normal-distribution, 128 GiB file size}
+%        		\label{fig:rw_90to10 128 normal}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zoned.jpg}
+%        		\caption{Mixed, 90\% reads, zoned-distribution, 128 GiB file size}
+%        		\label{fig:rw_90to10 128 zoned}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}
+%        		\caption{Mixed, 50\% reads,normal-distribution, 64 GiB file size}
+%        		\label{fig:rw_50to50 64 normal}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_uniform.jpg}
+%        		\caption{Mixed, 90\% reads, uniform-distribution, 128 GiB file size}
+%        		\label{fig:rw_90to10 128 uniform}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_uniform.jpg}
+%        		\caption{Mixed, 50\% reads, uniform-distribution, 128 GiB file size}
+%        		\label{fig:rw_50to50 128 uniform}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+%---------------------------------------------------------------------
+
 \begin{frame}[fragile]
 	\navframetitle{Single Threaded Benchmarks}
 	
+	\textbf{Single Threaded Benchmarks}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Read-only}
+
 	\begin{columns}
 		\begin{column}{0.5\textwidth}
-			\begin{itemize}
-				\item Read-only benchmarks CLOCK and GCLOCK highest performance
-				\item Read-only CLOCK-Pro shows worst performance
-				\item Mixed benchmarks ML-Clock best performance
-				\item CLOCK, GCLOCK and CLOCK-Pro nearly equal performance
-				\item Increased write operations leads to lower hit rate
-			\end{itemize}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution}
+			\end{figure}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\begin{figure}[ht]
     			\centering
-    			\includegraphics[width=\textwidth]{randread_zipf.jpg}
-        		\caption{Read-only, zipf-distribution}
-        		\label{fig:single randread zipf}
+    			\includegraphics[width=\textwidth]{randread_normal.jpg}
+        		\caption{Read-only, normal-distribution}
 			\end{figure}			
 		\end{column}
 	\end{columns}
 \end{frame}
 
 \begin{frame}[fragile]
-	\navframetitle{Single Threaded Benchmarks}
+	\navframetitle{Single Threaded Benchmarks - Read-only}
 
 	\begin{columns}
 		\begin{column}{0.5\textwidth}
 			\begin{figure}
-				\includegraphics[width=\textwidth]{rw_90to10_zoned.jpg}
+        		\includegraphics[width=\textwidth]{randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_90to10_zoned.jpg}
         		\caption{Mixed, 90\% reads, zoned-distribution}
-        		\label{fig:single rw_90to10  zoned}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution}
 			\end{figure}
 		\end{column}
 		\begin{column}{0.5\textwidth}
@@ -413,70 +612,541 @@ Otto von Guericke University Magdeburg
     			\centering
     			\includegraphics[width=\textwidth]{rw_50to50_normal.jpg}
         		\caption{Mixed, 50\% reads, normal-distribution}
-        		\label{fig:single rw_90to10  normal}
 			\end{figure}			
 		\end{column}
 	\end{columns}
 \end{frame}
 
 \begin{frame}[fragile]
-	\navframetitle{Multi Threaded Benchmarks}
+	\navframetitle{Single Threaded Benchmarks - Mixed 50\%}
 
 	\begin{columns}
 		\begin{column}{0.5\textwidth}
-			\begin{itemize}
-				\item Result not as clear as single threaded benchmarks
-				\item Read-only benchmarks CLOCK and GCLOCK highest performance
-				\item Read-only CLOCK-Pro worst performance
-				\item Mixed no clear best policy
-				\item Mixed ML-CLOCK good performance for lower thread count
-				\item Mixed CLOCK-Pro better performance for higher thread count
-			\end{itemize}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks}
+
+	\textbf{Multi Threaded Benchmarks}
+\end{frame}
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Read-only}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_randread_zipf.jpg}
+%        		\caption{Read-only, zipf-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_randread_zipf.jpg}
+%        		\caption{Read-only, zipf-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Read-only}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_randread_normal.jpg}
+%        		\caption{Read-only, normal-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_randread_normal.jpg}
+%        		\caption{Read-only, normal-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_normal.jpg}
+        		\caption{Read-only, normal-distribution, 64 GiB file size}
+			\end{figure}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\begin{figure}[ht]
     			\centering
     			\includegraphics[width=\textwidth]{multi_128_gb_randread_normal.jpg}
         		\caption{Read-only, normal-distribution, 128 GiB file size}
-        		\label{fig:rw_90to10 128 normal}
 			\end{figure}			
 		\end{column}
 	\end{columns}
 \end{frame}
 
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Read-only}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_randread_zoned.jpg}
+%        		\caption{Read-only, zoned-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_randread_zoned.jpg}
+%        		\caption{Read-only, zoned-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
 \begin{frame}[fragile]
-	\navframetitle{Multi Threaded Benchmarks}
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
 
 	\begin{columns}
 		\begin{column}{0.5\textwidth}
 			\begin{figure}[ht]
     			\centering
-    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zoned.jpg}
-        		\caption{Mixed, 90\% reads, zoned-distribution, 128 GiB file size}
-        		\label{fig:rw_90to10 128 zoned}
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution, 64 GiB file size}
 			\end{figure}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\begin{figure}[ht]
     			\centering
-    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}
-        		\caption{Mixed, 50\% reads,normal-distribution, 64 GiB file size}
-        		\label{fig:rw_50to50 64 normal}
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution, 128 GiB file size}
 			\end{figure}			
 		\end{column}
 	\end{columns}
 \end{frame}
 
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Read-only}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_randread_uniform.jpg}
+%        		\caption{Read-only, uniform-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_randread_uniform.jpg}
+%        		\caption{Read-only, uniform-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
 \begin{frame}[fragile]
-	\navframetitle{Multi Threaded Benchmarks}
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
 
 	\begin{columns}
 		\begin{column}{0.5\textwidth}
 			\begin{figure}[ht]
     			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zipf.jpg}
+%        		\caption{Mixed, 90\% reads, zipf-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zipf.jpg}
+%        		\caption{Mixed, 90\% reads, zipf-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_normal.jpg}
+%        		\caption{Mixed, 90\% reads, normal-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_normal.jpg}
+%        		\caption{Mixed, 90\% reads, normal-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zoned.jpg}
+%        		\caption{Mixed, 90\% reads, zoned-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zoned.jpg}
+%        		\caption{Mixed, 90\% reads, zoned-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_uniform.jpg}
+%        		\caption{Mixed, 90\% reads, uniform-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_uniform.jpg}
+%        		\caption{Mixed, 90\% reads, uniform-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
     			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_uniform.jpg}
         		\caption{Mixed, 90\% reads, uniform-distribution, 128 GiB file size}
-        		\label{fig:rw_90to10 128 uniform}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zipf.jpg}
+%        		\caption{Mixed, 50\% reads, zipf-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zipf.jpg}
+%        		\caption{Mixed, 50\% reads, zipf-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_normal.jpg}
+%        		\caption{Mixed, 50\% reads, normal-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_normal.jpg}
+%        		\caption{Mixed, 50\% reads, normal-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zoned.jpg}
+%        		\caption{Mixed, 50\% reads, zoned-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zoned.jpg}
+%        		\caption{Mixed, 50\% reads, zoned-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+%\begin{frame}[fragile]
+%	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+%
+%	\begin{columns}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_uniform.jpg}
+%        		\caption{Mixed, 50\% reads, uniform-distribution, 16 GiB file size}
+%			\end{figure}
+%		\end{column}
+%		\begin{column}{0.5\textwidth}
+%			\begin{figure}[ht]
+%    			\centering
+%    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_uniform.jpg}
+%        		\caption{Mixed, 50\% reads, uniform-distribution, 32 GiB file size}
+%			\end{figure}			
+%		\end{column}
+%	\end{columns}
+%\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution, 64 GiB file size}
 			\end{figure}
 		\end{column}
 		\begin{column}{0.5\textwidth}
@@ -484,7 +1154,6 @@ Otto von Guericke University Magdeburg
     			\centering
     			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_uniform.jpg}
         		\caption{Mixed, 50\% reads, uniform-distribution, 128 GiB file size}
-        		\label{fig:rw_50to50 128 uniform}
 			\end{figure}			
 		\end{column}
 	\end{columns}
@@ -509,11 +1178,11 @@ Otto von Guericke University Magdeburg
 	\navframetitle{Future Work}
 	
 	\begin{itemize}
-		\item Modify DMU and policies so that CLOCK-Pro and ML-CLOCK can work correctly
+		\item Modify DMU and policies so that CLOCK-Pro and ML-CLOCK can work as intended
 		\item Include application traces for evaluation
-		\item Test if ML-CLOCK reduces write operation
+		\item Test if ML-CLOCK reduces write operation to underlying storage
 		\item Test more cache replacement policies
-		\item Extent test cases for multi threaded workloads
+		\item Extending test cases for multi threaded workloads
 	\end{itemize}
 \end{frame}
 
@@ -529,6 +1198,648 @@ Otto von Guericke University Magdeburg
 
 	\bibliographystyle{apalike}
 	\bibliography{presentation}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{randread_normal.jpg}
+        		\caption{Read-only, normal-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Single Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}
+        		\includegraphics[width=\textwidth]{rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_zipf.jpg}
+        		\caption{Read-only, zipf-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_randread_normal.jpg}
+        		\caption{Read-only, normal-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_randread_normal.jpg}
+        		\caption{Read-only, normal-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_normal.jpg}
+        		\caption{Read-only, normal-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_normal.jpg}
+        		\caption{Read-only, normal-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_zoned.jpg}
+        		\caption{Read-only, zoned-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Read-only}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_randread_uniform.jpg}
+        		\caption{Read-only, uniform-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zipf.jpg}
+        		\caption{Mixed, 90\% reads, zipf-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_normal.jpg}
+        		\caption{Mixed, 90\% reads, normal-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_zoned.jpg}
+        		\caption{Mixed, 90\% reads, zoned-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 90\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_90to10_uniform.jpg}
+        		\caption{Mixed, 90\% reads, uniform-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zipf.jpg}
+        		\caption{Mixed, 50\% reads, zipf-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_normal.jpg}
+        		\caption{Mixed, 50\% reads, normal-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_zoned.jpg}
+        		\caption{Mixed, 50\% reads, zoned-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%------------------------------------------------------
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_16_gb_rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution, 16 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_32_gb_rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution, 32 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+	\navframetitle{Multi Threaded Benchmarks - Mixed 50\%}
+
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_64_gb_rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution, 64 GiB file size}
+			\end{figure}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{figure}[ht]
+    			\centering
+    			\includegraphics[width=\textwidth]{multi_128_gb_rw_50to50_uniform.jpg}
+        		\caption{Mixed, 50\% reads, uniform-distribution, 128 GiB file size}
+			\end{figure}			
+		\end{column}
+	\end{columns}
 \end{frame}
 
 \end{document}
